@@ -96,7 +96,11 @@ def acquire_native(provider,journal,symbols,start,end,specs,*,bounds='regular',a
             elif not quality.get('normalization_supported',row.get('normalization_supported',True) if row else True):status='RAW_ONLY'
             elif row is None or not row.get('points'):status='EMPTY'
             elif symbol in quality.get('no_usable_symbols',[]) or not latest or all(v is None for v in latest['values'].values()):status='UNDEFINED'
-            elif any(quality.get(k) for k in ('invalid','missing_fields','missing_symbols','not_found','out_of_range')):status='PARTIAL'
+            # Missing or unresolved tickers have no series of their own. Do
+            # not downgrade an independently resolved sibling; keep the full
+            # shared quality on every record and remain cautious about damage
+            # whose counts are not attributed to individual symbols.
+            elif any(quality.get(k) for k in ('invalid','missing_fields','out_of_range')):status='PARTIAL'
             else:status='AVAILABLE_SOURCE_UNKNOWN'
             # Slot is stable across changing query windows. Complete windows are
             # independently identified and preserved; no time-window stitching.

@@ -1,3 +1,5 @@
+> Preserved upstream README. Relative links were adjusted for its relocation under `docs/`; upstream feature and marketing claims describe the Pine project, not verified capabilities of this Python observer.
+
 # AI Agent Lens
 
 **A TradingView indicator built for AI agents.**
@@ -25,7 +27,7 @@ One JSON packet per closed candle with everything a trader looks at:
 - **Long and short scores (0 to 100)** with the five factors behind each score
 - **Risk map:** entry, ATR stop, 1.5R and 3R targets, and live trade status
 
-Full field list: [docs/PACKET_SCHEMA.md](docs/PACKET_SCHEMA.md) · Example: [examples/sample_packet.json](examples/sample_packet.json)
+Full field list: [docs/PACKET_SCHEMA.md](../docs/PACKET_SCHEMA.md) · Example: [examples/sample_packet.json](../examples/sample_packet.json)
 
 ---
 
@@ -44,7 +46,7 @@ Full field list: [docs/PACKET_SCHEMA.md](docs/PACKET_SCHEMA.md) · Example: [exa
 
 1. The indicator runs on your TradingView chart and calculates everything on each closed candle.
 2. One TradingView alert sends the packet to your agent's webhook URL.
-3. Your agent (Claude Code with Fable 5.2, an n8n flow, your own bot) reads it with the prompt in [agent/AGENT_PROMPT.md](agent/AGENT_PROMPT.md) and returns a signal: decision, confidence, entry, stop, targets, position size, invalidation and why it could fail.
+3. Your agent (Claude Code with Fable 5.2, an n8n flow, your own bot) reads it with the prompt in [agent/AGENT_PROMPT.md](../agent/AGENT_PROMPT.md) and returns a signal: decision, confidence, entry, stop, targets, position size, invalidation and why it could fail.
 
 ---
 
@@ -52,7 +54,7 @@ Full field list: [docs/PACKET_SCHEMA.md](docs/PACKET_SCHEMA.md) · Example: [exa
 
 ### Step 1. Add the indicator to TradingView (1 minute)
 
-1. Open [ai-agent-lens.pine](ai-agent-lens.pine) and copy all of it.
+1. Open [ai-agent-lens.pine](../ai-agent-lens.pine) and copy all of it.
 2. In TradingView, open the **Pine Editor** at the bottom of the chart.
 3. Delete the default code, paste, and click **Save**, then **Add to chart**.
 
@@ -122,7 +124,7 @@ the momentum and structure changed over the session.
 #### Option B: No-code (n8n, Make, Zapier)
 
 1. Create a **Webhook** trigger and copy its URL into the TradingView alert.
-2. Add an **AI** step (Claude or any LLM). Use the block in [agent/AGENT_PROMPT.md](agent/AGENT_PROMPT.md) as the system prompt and the webhook body as the user message.
+2. Add an **AI** step (Claude or any LLM). Use the block in [agent/AGENT_PROMPT.md](../agent/AGENT_PROMPT.md) as the system prompt and the webhook body as the user message.
 3. Send the reply to Telegram, Discord, Slack or email.
 
 #### Option C: Your own bot
@@ -133,7 +135,7 @@ Point the webhook at your server. The body is plain JSON with the schema `ai-age
 
 ## What a signal looks like
 
-Example output from the agent prompt ([examples/sample_signal.json](examples/sample_signal.json)):
+Example output from the agent prompt ([examples/sample_signal.json](../examples/sample_signal.json)):
 
 ```json
 {
@@ -198,7 +200,7 @@ Each score is out of 100: five factors, 20 points each.
 | Volume | Bullish candle on above-average volume |
 | Higher timeframe | 4h close above its 50 EMA |
 
-The short score mirrors it. A **setup** fires when a score crosses 70 on a closed candle and the regime does not point the other way. While a trade is open, repeat signals in the same direction are ignored, so one move gives one signal. Full rules: [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
+The short score mirrors it. A **setup** fires when a score crosses 70 on a closed candle and the regime does not point the other way. While a trade is open, repeat signals in the same direction are ignored, so one move gives one signal. Full rules: [docs/SPECIFICATION.md](../docs/SPECIFICATION.md).
 
 ---
 

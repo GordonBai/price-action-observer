@@ -10,3 +10,6 @@ local_data/
 .env.*
 
 .superpowers/
+
+# Local dependency environments, never publish installed packages
+.venv/

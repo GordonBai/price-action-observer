@@ -168,3 +168,34 @@ class NativeRuntimeTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):main()
                 opened.assert_not_called()
             Journal(path).close()
+
+    def test_missing_sibling_does_not_downgrade_resolved_symbol_but_batch_damage_does(self):
+        from dataclasses import replace
+        from pa_lens.native_runtime import acquire_native, native_specs
+
+        class MissingSibling(FakeNative):
+            def __init__(self, damaged=False):
+                super().__init__()
+                self.damaged = damaged
+
+            def indicators(self, symbols, *args, **kwargs):
+                result = super().indicators([symbols[0]], *args, **kwargs)
+                return replace(result, quality={**result.quality, "not_found": [symbols[1]],
+                                                "missing_symbols": [symbols[1]],
+                                                "invalid": int(self.damaged)})
+
+        specs = native_specs("ema")
+        with tempfile.TemporaryDirectory() as tmp:
+            j = Journal(Path(tmp) / "siblings.db")
+            try:
+                clean = acquire_native(MissingSibling(), j, ["SOXL", "MISS"], START, END, specs)
+                self.assertEqual([(r["symbol"], r["status"]) for r in clean],
+                                 [("SOXL", "AVAILABLE_SOURCE_UNKNOWN"), ("MISS", "EMPTY")])
+                self.assertEqual(clean[0]["quality"]["not_found"], ["MISS"])
+                self.assertEqual(clean[0]["quality"]["missing_symbols"], ["MISS"])
+                damaged = acquire_native(MissingSibling(damaged=True), j,
+                                         ["SOXL", "MISS"], START, END, specs)
+                self.assertEqual(damaged[0]["status"], "PARTIAL")
+                self.assertEqual(damaged[0]["quality"]["invalid"], 1)
+            finally:
+                j.close()
