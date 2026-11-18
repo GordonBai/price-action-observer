@@ -1,0 +1,10 @@
+packets/
+__pycache__/
+*.pyc
+.DS_Store
+local_data/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+.env
+.env.*

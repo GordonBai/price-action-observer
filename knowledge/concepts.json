@@ -1,0 +1,3134 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-18",
+  "scope": "Curated research subset, not exhaustive and not detector coverage.",
+  "sources": [
+    {
+      "id": "brooks-gaps",
+      "title": "Advanced Gap Techniques (2018)",
+      "url": "https://www.brookstradingcourse.com/wp-content/uploads/2018/08/2018-July-20-CME-Advanced-Gap-Techniques.pdf",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_text_and_page_images",
+      "review_scope": "PDF pages 1–19 read; charts visually inspected",
+      "limitations": "Companion audio/video not reviewed; illustrated examples are not a statistical sample.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-big-bars",
+      "title": "Advanced Big Bar Techniques (2018)",
+      "url": "https://www.brookstradingcourse.com/wp-content/uploads/2018/08/2018-July-20-CME-Advanced-Big-Bar-Techniques.pdf",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_text_and_page_images",
+      "review_scope": "PDF pages 1–24 read; charts visually inspected",
+      "limitations": "Companion audio/video not reviewed; teaching probabilities uncalibrated.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-open",
+      "title": "Patterns on the Open (2018)",
+      "url": "https://www.brookstradingcourse.com/wp-content/uploads/2018/10/181030-futuresio-Patterns-on-the-Open-Al-Brooks.pdf",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_text_and_page_images",
+      "review_scope": "PDF pages 1–38 read; charts visually inspected",
+      "limitations": "Companion video not reviewed; primarily gap-down examples.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-china-1",
+      "title": "China Futures Daily Interview Part 1",
+      "url": "https://www.brookstradingcourse.com/ask-al/china-futures-daily-interview-part-1/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "official_transcript_read",
+      "review_scope": "Q1–7 full text",
+      "limitations": "Audio not heard; underlying charts not checked.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-china-2",
+      "title": "China Futures Daily Interview Part 2",
+      "url": "https://www.brookstradingcourse.com/ask-al/china-futures-daily-questions-answers-2/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "official_transcript_read",
+      "review_scope": "Q8–12 full text",
+      "limitations": "Audio not heard; actual-risk endpoint remains unresolved.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-brazil",
+      "title": "Brazil Price Action Video Podcast",
+      "url": "https://www.brookstradingcourse.com/ask-al/brazil-price-action-video-podcast/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "official_transcript_read",
+      "review_scope": "Full Q&A text",
+      "limitations": "Video/audio not watched; transcript includes an unclear passage.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-glossary",
+      "title": "Price Action Trading Terms Glossary",
+      "url": "https://www.brookstradingcourse.com/price-action-trading-terms-glossary/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "indexed_substantive_text",
+      "review_scope": "Double top/bottom and failed-failure definitions",
+      "limitations": "Not a complete page or chart review.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-ranges",
+      "title": "Trading Ranges",
+      "url": "https://www.brookstradingcourse.com/how-to-trade-manual/trading-ranges/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "indexed_substantive_text",
+      "review_scope": "Cycle, failures, tight ranges and range behavior",
+      "limitations": "Full illustrations and video not reviewed.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-candles",
+      "title": "Candlestick Charts",
+      "url": "https://www.brookstradingcourse.com/how-to-trade-manual/candlestick-charts/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "indexed_substantive_text",
+      "review_scope": "Setup versus isolated candle",
+      "limitations": "Full page and charts not reviewed.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-ten",
+      "title": "10 Best Price Action Trading Patterns",
+      "url": "https://www.brookstradingcourse.com/price-action/10-best-price-action-trading-patterns/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "indexed_substantive_text",
+      "review_scope": "Introduction, MTR, final flags, breakouts, H2/L2",
+      "limitations": "Not all sections or charts read; not exhaustive counting rules.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "cme-reversals",
+      "title": "CME Technical Patterns: Reversals",
+      "url": "https://www.cmegroup.com/education/courses/technical-analysis/technical-patterns-reversals",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_page_text",
+      "review_scope": "Reversal patterns and confirmation",
+      "limitations": "No claim of SOXL-specific validation.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "nison-glossary",
+      "title": "Nison Candlestick Patterns",
+      "url": "https://candlecharts.com/candlestick-patterns/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "selected_page_sections",
+      "review_scope": "Engulfing, harami, hammer/hanging-man definitions",
+      "limitations": "Glossary definitions only; complete books/courses not reviewed.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "lo-mamaysky-wang",
+      "title": "Foundations of Technical Analysis",
+      "url": "https://business.columbia.edu/sites/default/files-efs/pubfiles/19268/Lo-Mamaysky_wang_foundations.pdf",
+      "reviewed_at": "2026-11-18",
+      "review_method": "selected_paper_sections",
+      "review_scope": "Abstract, introduction, double-bottom definition, rolling algorithm and table explanations",
+      "limitations": "Not full-paper replication; daily-study settings cannot transfer to minute bars.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-course-index",
+      "title": "Brooks Trading Course index",
+      "url": "https://www.brookstradingcourse.com/trade-price-action/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "index_only",
+      "review_scope": "193 core entries extracted: 121 fundamentals + 72 trading",
+      "limitations": "Zero course videos watched in this index review; 16 bonus videos excluded.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-12a",
+      "title": "12A Market Cycle official public sample",
+      "url": "https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_captions_sampled_frames",
+      "review_scope": "All 725 official English VTT cues, 00:00:01.898–00:43:24.810, read. 13 sampled stable frames: 02:30,07:10,10:40,14:10,18:20,21:20,24:30,28:20,31:10,35:00,38:20,41:00,43:00.",
+      "limitations": "No audio heard; not continuous video review. Frames between sample points and animation stages not fully reviewed. Review by project research contributor; not transcribed anew here.",
+      "license_status": "publicly_accessible_not_assumed_open_license",
+      "media_review": {
+        "id": "12a",
+        "duration_seconds": 2608.466667,
+        "cues": 725,
+        "first_cue": "00:00:01.898",
+        "last_cue_end": "00:43:24.810",
+        "sha256": "f24149c9abe46dfca7f087ec7a8e2d499ae9f70fd707119d670068e64c295593",
+        "caption_review": "all_cues_fully_read",
+        "visual_points": [
+          "02:30",
+          "07:10",
+          "10:40",
+          "14:10",
+          "18:20",
+          "21:20",
+          "24:30",
+          "28:20",
+          "31:10",
+          "35:00",
+          "38:20",
+          "41:00",
+          "43:00"
+        ],
+        "audio_heard": false,
+        "continuous_video_review": false
+      }
+    },
+    {
+      "id": "brooks-20ab-sample",
+      "title": "20AB Measured Moves public sample",
+      "url": "https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_captions_sampled_frames",
+      "review_scope": "All 212 official English VTT cues read, 00:00:01.453–00:15:28.695. Sampled frames: 03:48, 10:28.",
+      "limitations": "No audio heard; no continuous video review. Intervening frames, animations and uncaptained audio not reviewed. Public excerpt only, not full paid course chapter. Review recorded by project research contributor.",
+      "license_status": "publicly_accessible_not_assumed_open_license",
+      "media_review": {
+        "id": "mm",
+        "duration_seconds": 930.3,
+        "cues": 212,
+        "first_cue": "00:00:01.453",
+        "last_cue_end": "00:15:28.695",
+        "lines": 996,
+        "sha256": "24749984c0c4226aefa2a124709782471c023a9c381164957d286f795d8b9017",
+        "caption_review": "all_cues_fully_read",
+        "visual_points": [
+          "03:48",
+          "10:28"
+        ],
+        "audio_heard": false,
+        "continuous_video_review": false
+      }
+    },
+    {
+      "id": "brooks-2017-open-sample",
+      "title": "2017 Trading the Open public sample",
+      "url": "https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_captions_sampled_frames",
+      "review_scope": "All 727 official English VTT cues read, 00:00:01.940–00:47:25.776. Sampled frames: 18:25, 36:05, 41:45.",
+      "limitations": "No audio heard; no continuous video review. Intervening frames, animations and uncaptained audio not reviewed. Public excerpt only, not full paid course chapter. Review recorded by project research contributor.",
+      "license_status": "publicly_accessible_not_assumed_open_license",
+      "media_review": {
+        "id": "open",
+        "duration_seconds": 2849.5,
+        "cues": 727,
+        "first_cue": "00:00:01.940",
+        "last_cue_end": "00:47:25.776",
+        "lines": 3403,
+        "sha256": "469ce3cf50c226da631e76ad98ffb793d5686a438aa00e01c8b27b4dd92fcd8d",
+        "caption_review": "all_cues_fully_read",
+        "visual_points": [
+          "18:25",
+          "36:05",
+          "41:45"
+        ],
+        "audio_heard": false,
+        "continuous_video_review": false
+      }
+    },
+    {
+      "id": "brooks-37ab-sample",
+      "title": "37AB How to Trade public sample",
+      "url": "https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_captions_sampled_frames",
+      "review_scope": "All 218 official English VTT cues read, 00:00:01.647–00:14:17.790. Sampled frames: 03:57.",
+      "limitations": "No audio heard; no continuous video review. Intervening frames, animations and uncaptained audio not reviewed. Public excerpt only, not full paid course chapter. Review recorded by project research contributor.",
+      "license_status": "publicly_accessible_not_assumed_open_license",
+      "media_review": {
+        "id": "how",
+        "duration_seconds": 861.8,
+        "cues": 218,
+        "first_cue": "00:00:01.647",
+        "last_cue_end": "00:14:17.790",
+        "lines": 1026,
+        "sha256": "643c0c69d350d227d1c6205e99155155f9d1e33f5edb6e19cdf32a7734289477",
+        "caption_review": "all_cues_fully_read",
+        "visual_points": [
+          "03:57"
+        ],
+        "audio_heard": false,
+        "continuous_video_review": false
+      }
+    },
+    {
+      "id": "brooks-42a-sample",
+      "title": "42A Climactic Reversals public sample",
+      "url": "https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_captions_sampled_frames",
+      "review_scope": "All 227 official English VTT cues read, 00:00:01.993–00:13:41.788. Sampled frames: 07:46, 08:56.",
+      "limitations": "No audio heard; no continuous video review. Intervening frames, animations and uncaptained audio not reviewed. Public excerpt only, not full paid course chapter. Review recorded by project research contributor.",
+      "license_status": "publicly_accessible_not_assumed_open_license",
+      "media_review": {
+        "id": "climax",
+        "duration_seconds": 825.533333,
+        "cues": 227,
+        "first_cue": "00:00:01.993",
+        "last_cue_end": "00:13:41.788",
+        "lines": 1039,
+        "sha256": "097904d965295c6177948432df1c280b2ac33377b9eeeeb7fcb222351c14489e",
+        "caption_review": "all_cues_fully_read",
+        "visual_points": [
+          "07:46",
+          "08:56"
+        ],
+        "audio_heard": false,
+        "continuous_video_review": false
+      }
+    },
+    {
+      "id": "cme-support-resistance",
+      "title": "CME Support and Resistance",
+      "url": "https://www.cmegroup.com/education/courses/trading-and-analysis/support-and-resistance",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_page_text",
+      "review_scope": "Full lesson text: moving averages, prior highs/lows, price levels, trend lines and zones.",
+      "limitations": "Embedded video not watched; figures not separately inspected. Descriptive teaching statements, not validated SOXL probabilities.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-glossary-selected",
+      "title": "Brooks glossary: selected foundational entries",
+      "url": "https://www.brookstradingcourse.com/price-action-trading-terms-glossary/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "selected_page_sections",
+      "review_scope": "Official HTML fetched and selected definitions read: always in, breakout/mode, follow-through, ii/ioi, micro/tight channel, pullback, ledge, tight trading range, swing high/low and HH/HL/LH/LL, trend/channel lines, wedge and three pushes.",
+      "limitations": "Not a full-page or audiovisual review; definitions do not establish complete algorithms. Historical point/tick examples not transferred to SOXL.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "sec-orders",
+      "title": "SEC Understanding Order Types",
+      "url": "https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-14",
+      "reviewed_at": "2026-11-18",
+      "review_method": "indexed_substantive_text",
+      "review_scope": "Market, limit, stop and stop-limit substantive text read by research contributor.",
+      "limitations": "Broker/account configuration not reviewed.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "direxion-soxl",
+      "title": "Direxion SOXL/SOXS product objectives",
+      "url": "https://www.direxion.com/product/daily-semiconductor-bull-bear-3x-etfs",
+      "reviewed_at": "2026-11-18",
+      "review_method": "selected_page_sections",
+      "review_scope": "Objective, daily-target limitations and index information read by research contributor.",
+      "limitations": "Full prospectus not reviewed; product terms can change.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "sec-extended-hours",
+      "title": "SEC Extended-Hours Trading",
+      "url": "https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-42",
+      "reviewed_at": "2026-11-18",
+      "review_method": "full_page_text",
+      "review_scope": "Overview and Risks bulletin body read by research contributor.",
+      "limitations": "Current broker capabilities, auctions and exchange halt rules not reviewed.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-time-stops",
+      "title": "Brooks Time Stops",
+      "url": "https://www.brookstradingcourse.com/ask-al/time-stops-al-brooks-approach/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "official_transcript_read",
+      "review_scope": "Complete official Audio transcript returned through search read by research contributor; direct open 403.",
+      "limitations": "Audio not heard; chart not checked.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    },
+    {
+      "id": "brooks-scaling",
+      "title": "Brooks Stop Management and Scaling In",
+      "url": "https://www.brookstradingcourse.com/ask-al/trade-stop-management-scaling-in/",
+      "reviewed_at": "2026-11-18",
+      "review_method": "official_transcript_read",
+      "review_scope": "Both official transcript parts returned through search read by research contributor; direct open 403.",
+      "limitations": "Video not watched; charts not checked.",
+      "license_status": "publicly_accessible_not_assumed_open_license"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "setup",
+      "title": "Setup / 交易设置",
+      "aliases": [
+        "setup",
+        "交易设置",
+        "信号背景"
+      ],
+      "category": "foundations",
+      "summary": "形态、上下文、信号条和触发条件共同构成候选交易，不是单根蜡烛标签。",
+      "context": "同一条在趋势与区间中含义不同。",
+      "counterexample": "漂亮反转条仍可能只是趋势内回调。",
+      "causal_constraints": [
+        "先保存背景，再评价信号；不能用结果重写背景。"
+      ],
+      "open_questions": [
+        "上下文客观标注的一致性。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-candles",
+          "locator": "Indexed setup discussion",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "signal-entry-stop",
+        "market-cycle"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/core.py",
+            "symbols": "Engine.update",
+            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+          }
+        ],
+        "limits": "Strict DB/DT and range-breakout events carry context/trigger/stop; not a general Brooks setup model.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "形态、上下文、信号条和触发条件共同构成候选交易，不是单根蜡烛标签。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "先保存背景，再评价信号；不能用结果重写背景。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "market-cycle",
+      "title": "Market cycle / 市场周期",
+      "aliases": [
+        "market cycle",
+        "市场周期",
+        "交易区间",
+        "TR"
+      ],
+      "category": "context",
+      "summary": "突破、紧通道、宽通道和区间是绑定时间框架的背景，不必依次全部出现；首次回调通常结束突破阶段，但重新连续强趋势条是例外。",
+      "context": "回调和双向交易改变趋势结构。",
+      "counterexample": "一根回调不能永久锁定通道；较短尺度Always In变化也不等于更大结构已反转。",
+      "causal_constraints": [
+        "只用当前已完成数据分类；等待是正常输出。"
+      ],
+      "open_questions": [
+        "状态边界和标注者一致性。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-ranges",
+          "locator": "Cycle and range sections",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 00:00–02:38,26:23–29:20; sampled frames 02:30,28:20",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "tight-channel",
+        "failed-failure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/core.py",
+            "symbols": "Engine._context",
+            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+          }
+        ],
+        "limits": "20-bar directional efficiency >0.55 is a coarse heuristic, not the full cycle.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "突破、紧通道、宽通道和区间是绑定时间框架的背景，不必依次全部出现；首次回调通常结束突破阶段，但重新连续强趋势条是例外。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "只用当前已完成数据分类；等待是正常输出。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "double-bottom",
+      "title": "Double bottom / 双底",
+      "aliases": [
+        "double bottom",
+        "DB",
+        "双底",
+        "W底",
+        "双底牛旗"
+      ],
+      "category": "patterns",
+      "summary": "两次测试附近低位不要求精确相等；双底可作为反转尝试或趋势内牛旗。",
+      "context": "应区分微型、波段、旗形和经典颈线确认版本。",
+      "counterexample": "两个低点不自动构成重大趋势反转。",
+      "causal_constraints": [
+        "延迟确认的摆点不能回填成早先已知信号。"
+      ],
+      "open_questions": [
+        "容差、间隔、尺度及不同定义的兼容范围。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-glossary",
+          "locator": "Double bottom definition",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "cme-reversals",
+          "locator": "Double bottoms and confirmation",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 29:20–31:47; sampled frame 31:10",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-2017-open-sample",
+          "locator": "Captions 35:28–40:14; sampled frame 36:05 shows higher-low DB",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "major-trend-reversal",
+        "measured-move"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/core.py",
+            "symbols": "Engine.update",
+            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+          }
+        ],
+        "limits": "Strict delayed-pivot, tolerance/rebound and neckline-close variant only; not all Brooks DB flags/tests.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "两次测试附近低位不要求精确相等；双底可作为反转尝试或趋势内牛旗。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "延迟确认的摆点不能回填成早先已知信号。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "double-top",
+      "title": "Double top / 双顶",
+      "aliases": [
+        "double top",
+        "DT",
+        "双顶",
+        "M顶",
+        "双顶熊旗"
+      ],
+      "category": "patterns",
+      "summary": "两次附近高位测试可以是顶部尝试，也可能是趋势内熊旗。",
+      "context": "需要左侧走势、尺度与确认条件。",
+      "counterexample": "M形外观不证明下一段下跌或有净盈利。",
+      "causal_constraints": [
+        "首次和二次测试必须各有可观察时刻。"
+      ],
+      "open_questions": [
+        "经典颈线版本与Brooks宽松测试版本的边界。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-glossary",
+          "locator": "Double top definition",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "cme-reversals",
+          "locator": "Double tops",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "double-bottom",
+        "major-trend-reversal"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/core.py",
+            "symbols": "Engine.update",
+            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+          }
+        ],
+        "limits": "Mirror strict DB heuristic; not full Brooks double-top coverage.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "两次附近高位测试可以是顶部尝试，也可能是趋势内熊旗。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "首次和二次测试必须各有可观察时刻。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "measured-move",
+      "title": "Measured move / 量度移动",
+      "aliases": [
+        "MM",
+        "measured move",
+        "量度移动",
+        "测量移动",
+        "等长腿"
+      ],
+      "category": "targets",
+      "summary": "MM是一组投射方法，包括区间、突破高度和等长腿，不是唯一固定公式。",
+      "context": "必须说明是哪种投射和哪组锚点。",
+      "counterexample": "第二腿可以不到目标就反转；区间中两腿上涨仍可只是牛腿。实体投射失败后可能改为相反方向假设。",
+      "causal_constraints": [
+        "生成时冻结锚点；不得事后挑选最贴合高低点的目标。"
+      ],
+      "open_questions": [
+        "各子类锚点选择与优先级。",
+        "区间高度与较次要的区间中点投射须分family；多K开到收实体投射的锚点生命周期。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-china-1",
+          "locator": "Q4/Q6",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF pages 13–15",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-20ab-sample",
+          "locator": "Captions 00:40–05:51,06:00–11:39; sampled frames 03:48,10:28",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "gap-taxonomy",
+        "double-bottom"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/core.py",
+            "symbols": "Engine.update; project_equal_leg",
+            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+          }
+        ],
+        "limits": "Range/DB height projections and manual AB=CD helper only; no automatic gap-MM or anchor hierarchy.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "MM是一组投射方法，包括区间、突破高度和等长腿，不是唯一固定公式。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "生成时冻结锚点；不得事后挑选最贴合高低点的目标。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "gap-taxonomy",
+      "title": "Gap taxonomy / 缺口分类",
+      "aliases": [
+        "gap",
+        "缺口",
+        "跳空",
+        "广义缺口"
+      ],
+      "category": "features",
+      "summary": "Brooks的gap包括开收差、微缺口、实体不重叠和突破回测空间。",
+      "context": "传统隔夜跳空只是其中一种。",
+      "counterexample": "大多数微小空间没有可用跟随。",
+      "causal_constraints": [
+        "记录两端价格来源和gap_kind，不混用定义。"
+      ],
+      "open_questions": [
+        "每类填补条件和尺度。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF pages 3–8",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "micro-gap",
+        "body-gap",
+        "breakout-test",
+        "gap-open"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Separate adjacent open/body/micro-gap and EMA-gap observations; no full gap role taxonomy.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "Brooks的gap包括开收差、微缺口、实体不重叠和突破回测空间。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "记录两端价格来源和gap_kind，不混用定义。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "micro-gap",
+      "title": "Micro gap / 微缺口",
+      "aliases": [
+        "micro gap",
+        "micro-gap",
+        "微缺口",
+        "微型缺口"
+      ],
+      "category": "features",
+      "summary": "中间趋势条的前一条与后一条高低范围不重叠。",
+      "context": "保持未填补可作为趋势压力的观察证据。",
+      "counterexample": "未来条回到缺口内会削弱该证据。",
+      "causal_constraints": [
+        "中间条t的微缺口必须到t+1形成才可判断；已收盘系统等t+1收盘。"
+      ],
+      "open_questions": [
+        "触及与完全填补的操作定义。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF pages 4–6",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "gap-taxonomy",
+        "body-gap"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Three-bar nonoverlap with directional middle body; strict subset.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "中间趋势条的前一条与后一条高低范围不重叠。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "中间条t的微缺口必须到t+1形成才可判断；已收盘系统等t+1收盘。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "body-gap",
+      "title": "Body gap / 实体缺口",
+      "aliases": [
+        "body gap",
+        "实体缺口",
+        "negative gap"
+      ],
+      "category": "features",
+      "summary": "相关条的影线可交叠，而实体仍不交叠。",
+      "context": "要知道比较的是哪两组结构条。",
+      "counterexample": "随后实体重叠使原论据失效。",
+      "causal_constraints": [
+        "保存开收实体边界，不能用任意close差替代。"
+      ],
+      "open_questions": [
+        "组间实体比较范围。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF pages 16–17",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "micro-gap",
+        "gap-taxonomy"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Adjacent candle bodies strictly nonoverlap; not every Brooks body-gap variant.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "相关条的影线可交叠，而实体仍不交叠。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "保存开收实体边界，不能用任意close差替代。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "gap-open",
+      "title": "Gap open bar / 开盘缺口条",
+      "aliases": [
+        "gap open",
+        "gap open bar",
+        "开盘缺口条"
+      ],
+      "category": "features",
+      "summary": "当前开盘相对前收的差与当前最终方向是两个不同信息。",
+      "context": "前条方向、后条收盘和跟随共同影响解释。",
+      "counterexample": "高开后收阴并不等价于持续买压。",
+      "causal_constraints": [
+        "区分开盘事件和收盘确认，未收盘标为临时。"
+      ],
+      "open_questions": [
+        "逐tick与聚合条的数据质量影响。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF pages 7–10",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "gap-taxonomy",
+        "buying-pressure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Adjacent open versus prior close only; no opening-session regime model.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "当前开盘相对前收的差与当前最终方向是两个不同信息。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "区分开盘事件和收盘确认，未收盘标为临时。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "breakout-test",
+      "title": "Breakout test / 突破回测",
+      "aliases": [
+        "BO test",
+        "breakout test",
+        "突破回测"
+      ],
+      "category": "patterns",
+      "summary": "突破后回调仍停在旧突破点之外，可视为保持空间的测试。",
+      "context": "必须先有已定义的突破位置。",
+      "counterexample": "回到原区间或穿过回测边界可能否定延续前提。",
+      "causal_constraints": [
+        "突破点及回测结构要事先记录。"
+      ],
+      "open_questions": [
+        "何时判定回调结束与趋势恢复。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF pages 11–12",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "failed-failure",
+        "measured-move"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Frozen range level, space-preserving or touch/reclaim observations; no guaranteed support.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "突破后回调仍停在旧突破点之外，可视为保持空间的测试。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "突破点及回测结构要事先记录。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "surprise-bar",
+      "title": "Surprise bar / 惊讶条",
+      "aliases": [
+        "surprise bar",
+        "big bar",
+        "大阳线",
+        "大阴线",
+        "惊讶条"
+      ],
+      "category": "features",
+      "summary": "异常大条可以承担突破、反转、衰竭或give-up等不同角色。",
+      "context": "相对尺度与左侧区间/通道背景共同决定解释。",
+      "counterexample": "通道外加速与区间突破不能使用同一方向规则。",
+      "causal_constraints": [
+        "相对大小参考只用过去数据；ATR倍数是工程近似而非官方规则。"
+      ],
+      "open_questions": [
+        "异常阈值、参考窗口和context标注。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-big-bars",
+          "locator": "PDF pages 3–7",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "second-leg-trap",
+        "climax",
+        "buying-pressure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Range >=2x prior ten-bar mean and body >=65%; contextual role unknown.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "异常大条可以承担突破、反转、衰竭或give-up等不同角色。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "相对大小参考只用过去数据；ATR倍数是工程近似而非官方规则。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "second-leg-trap",
+      "title": "Second-leg trap / 第二段陷阱",
+      "aliases": [
+        "second leg trap",
+        "第二段陷阱",
+        "二腿陷阱"
+      ],
+      "category": "patterns",
+      "summary": "看似趋势续段的大条也可能在更大区间中成为失败突破。",
+      "context": "必须查看更大左侧结构。",
+      "counterexample": "强势惊讶条也可能成功延续，不宜一律反做。",
+      "causal_constraints": [
+        "腿的起止和可知时间须明确，不能事后挑两段。"
+      ],
+      "open_questions": [
+        "客观分腿、第二段与延续的边界。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-big-bars",
+          "locator": "PDF pages 9,16",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-open",
+          "locator": "PDF page 24",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "surprise-bar",
+        "failed-failure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "看似趋势续段的大条也可能在更大区间中成为失败突破。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "腿的起止和可知时间须明确，不能事后挑两段。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "climax",
+      "title": "Climax / 高潮",
+      "aliases": [
+        "climax",
+        "buy climax",
+        "sell climax",
+        "高潮",
+        "衰竭"
+      ],
+      "category": "context",
+      "summary": "趋势晚期加速可能接近衰竭，但也可能先有另一段。",
+      "context": "考虑持续时间、尺度、加速和左侧结构。",
+      "counterexample": "超过20条仍可能出现有效延续缺口。",
+      "causal_constraints": [
+        "先标衰竭候选，不能凭后来反转倒标当时已确认。"
+      ],
+      "open_questions": [
+        "趋势成熟度与衰竭确认条件。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_candidate_only",
+      "sources": [
+        {
+          "source_id": "brooks-big-bars",
+          "locator": "PDF pages 14–15",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-gaps",
+          "locator": "PDF page 13",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-42a-sample",
+          "locator": "Captions 00:44–10:09; sampled frames 07:46,08:56",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "parabolic-wedge",
+        "surprise-bar"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Surprise in same directional context is candidate only; no exhaustive climax taxonomy.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "趋势晚期加速可能接近衰竭，但也可能先有另一段。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "先标衰竭候选，不能凭后来反转倒标当时已确认。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "tight-channel",
+      "title": "Tight channel / 紧通道",
+      "aliases": [
+        "tight channel",
+        "紧通道"
+      ],
+      "category": "context",
+      "summary": "紧通道强调持续方向和有限逆向可交易空间，不能仅靠一条效率比定义。",
+      "context": "解释依赖时间尺度、回撤及交易成本。",
+      "counterexample": "官方图例中强微通道也出现重大反转。",
+      "causal_constraints": [
+        "通道线及尺度在当时冻结；不得用后面转折重画。"
+      ],
+      "open_questions": [
+        "紧通道与微通道的独立规则、成本敏感性。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-china-1",
+          "locator": "Q2/Q4/Q5",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-big-bars",
+          "locator": "PDF page 17",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 02:38–11:17,31:47–35:17; sampled frames 07:10,10:40,35:00",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-37ab-sample",
+          "locator": "Captions 02:08–05:43; sampled frame 03:57",
+          "support_role": "counterexample_support"
+        }
+      ],
+      "related": [
+        "market-cycle",
+        "buying-pressure",
+        "micro-channel"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "紧通道强调持续方向和有限逆向可交易空间，不能仅靠一条效率比定义。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "通道线及尺度在当时冻结；不得用后面转折重画。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "buying-pressure",
+      "title": "Buying/selling pressure / 买卖压力",
+      "aliases": [
+        "buying pressure",
+        "selling pressure",
+        "买压",
+        "卖压",
+        "连续阳线"
+      ],
+      "category": "features",
+      "summary": "连续小条的收盘进展、重叠和方向持续性也能显示压力。",
+      "context": "大条不是全部压力证据。",
+      "counterexample": "众多同源特征不能当成独立投票相加。",
+      "causal_constraints": [
+        "分别保存尺寸、持续性和重叠，不把分数叫概率。"
+      ],
+      "open_questions": [
+        "特征相关性和独立验证。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-big-bars",
+          "locator": "PDF pages 20–21",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "tight-channel",
+        "surprise-bar"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Trend-bar body/close location only; no hidden participant identification.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "连续小条的收盘进展、重叠和方向持续性也能显示压力。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "分别保存尺寸、持续性和重叠，不把分数叫概率。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "opening-reversal",
+      "title": "Opening reversal / 开盘反转",
+      "aliases": [
+        "opening reversal",
+        "开盘反转",
+        "开盘趋势",
+        "trend from open"
+      ],
+      "category": "patterns",
+      "summary": "低开可走牛或走熊；早盘反转也可能失败并恢复原趋势。",
+      "context": "昨高昨低、均线和较大周期支撑构成背景。",
+      "counterexample": "强开盘方向不等于最终全天走势。",
+      "causal_constraints": [
+        "固定交易时区/时段；不能用收盘终态回填开盘标签。",
+        "日线OHLC不能唯一决定高低先后，不得用收盘后的日线形状回灌早盘。ES历史81条设定不能移植为SOXL常规盘条数。"
+      ],
+      "open_questions": [
+        "不同市场开盘窗口与数据权限。",
+        "45:19–45:28字幕high指代含混，未核音，不编码收盘目标。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-open",
+          "locator": "PDF pages 4,6,8–9,17–20",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-2017-open-sample",
+          "locator": "Captions 01:22–16:51,24:01–35:23,45:04–45:56; sampled frame 36:05",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "signal-entry-stop",
+        "failed-failure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "低开可走牛或走熊；早盘反转也可能失败并恢复原趋势。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "固定交易时区/时段；不能用收盘终态回填开盘标签。",
+          "日线OHLC不能唯一决定高低先后，不得用收盘后的日线形状回灌早盘。ES历史81条设定不能移植为SOXL常规盘条数。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "signal-entry-stop",
+      "title": "Signal, trigger and structural stop / 信号、触发与止损",
+      "aliases": [
+        "signal bar",
+        "entry bar",
+        "stop entry",
+        "信号条",
+        "结构止损"
+      ],
+      "category": "execution",
+      "summary": "信号条、后续入场触发和结构保护位置应分开。",
+      "context": "多条反转的最低点可能早于买入信号条。",
+      "counterexample": "只用信号条低点作止损会遗漏更早结构极值。",
+      "causal_constraints": [
+        "信号收盘后才允许后续触发；缺口穿价和条内路径不明要保守处理。",
+        "Buy-the-close须选择可执行版本；知道最终收盘后不能再假设按同收盘价无成本成交。"
+      ],
+      "open_questions": [
+        "订单到达、滑点及取消政策。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-open",
+          "locator": "PDF pages 11–15",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 29:20–31:47; sampled frame 31:10",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-2017-open-sample",
+          "locator": "Captions around 35:11, buy-the-close execution explanation",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "setup",
+        "actual-risk"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/replay.py",
+            "symbols": "evaluate",
+            "sha256": "94de4dfa6530ea5c7cc8f333d8308c3a054348b7f1c2a21d0854ab9599b82fff"
+          }
+        ],
+        "limits": "Paper trigger/stop/target handling for existing events, not broker execution or all structural stop policies.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "信号条、后续入场触发和结构保护位置应分开。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "信号收盘后才允许后续触发；缺口穿价和条内路径不明要保守处理。",
+          "Buy-the-close须选择可执行版本；知道最终收盘后不能再假设按同收盘价无成本成交。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "parabolic-wedge",
+      "title": "Parabolic wedge / 抛物线楔形",
+      "aliases": [
+        "parabolic wedge",
+        "抛物线楔形"
+      ],
+      "category": "patterns",
+      "summary": "紧密加速走势中的多次推动可构成楔形候选，但三低点不等于抄底信号。",
+      "context": "强第三推后可能需要微双底等进一步证据。",
+      "counterexample": "官方失败图显示连续楔底后继续下跌。",
+      "causal_constraints": [
+        "记录各推当时可知时间；新大结构不得覆盖旧失败。"
+      ],
+      "open_questions": [
+        "推数/重置、加速和tightness的可重复定义。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-open",
+          "locator": "PDF pages 26–27,31,36",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "climax",
+        "double-bottom",
+        "major-trend-reversal"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "Generic three-push swing candidates are NOT an accelerating parabolic-wedge detector. No dedicated parabolic geometry implementation.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "紧密加速走势中的多次推动可构成楔形候选，但三低点不等于抄底信号。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "记录各推当时可知时间；新大结构不得覆盖旧失败。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [
+        "三推",
+        "three push",
+        "三段急跌"
+      ],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "major-trend-reversal",
+      "title": "Major trend reversal / 重大趋势反转",
+      "aliases": [
+        "MTR",
+        "major trend reversal",
+        "重大趋势反转",
+        "大反转"
+      ],
+      "category": "patterns",
+      "summary": "双底或首次反弹未必是MTR，必须考虑前趋势和反转发展。",
+      "context": "局部反转与更高尺度趋势可能并存。",
+      "counterexample": "强卖压后第一反弹可能仍是小反转。",
+      "causal_constraints": [
+        "发布候选与确认分别记录，不后移历史前提。"
+      ],
+      "open_questions": [
+        "完整结构要求与尺度阈值尚待核。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-open",
+          "locator": "PDF pages 26,34",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-ten",
+          "locator": "Indexed MTR section",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "double-bottom",
+        "parabolic-wedge"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "双底或首次反弹未必是MTR，必须考虑前趋势和反转发展。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "发布候选与确认分别记录，不后移历史前提。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "failed-failure",
+      "title": "Failed failure / 失败的失败",
+      "aliases": [
+        "failed failure",
+        "失败的失败",
+        "反转失败"
+      ],
+      "category": "patterns",
+      "summary": "突破后的反转尝试也能失败，原趋势恢复时可能成为突破回调。",
+      "context": "失败事件本身改变背景，而非删除原信号。",
+      "counterexample": "一次短反向运动不必然确认原突破失败。",
+      "causal_constraints": [
+        "保存原事件和修订链，每次变化只用当时证据。"
+      ],
+      "open_questions": [
+        "失败触发及最大观察期。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-glossary",
+          "locator": "Failed failure definition",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-open",
+          "locator": "PDF page 20",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "breakout-test",
+        "opening-reversal"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "Invalidation events exist, but no linked failed-failure/resumption detector.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "突破后的反转尝试也能失败，原趋势恢复时可能成为突破回调。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "保存原事件和修订链，每次变化只用当时证据。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [
+        "突破失败",
+        "failed breakout"
+      ],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "second-entry",
+      "title": "Second entry / 二次入场",
+      "aliases": [
+        "H2",
+        "L2",
+        "High 2",
+        "Low 2",
+        "二次入场",
+        "第二次尝试"
+      ],
+      "category": "patterns",
+      "summary": "二次入场依赖第一次尝试及其失败/回调过程，不是任意两个极值。",
+      "context": "方向、嵌套尺度与继续趋势背景需区分。",
+      "counterexample": "视觉三次尝试不必满足严格H3计数；第二次失败突破也不保证整日反转。",
+      "causal_constraints": [
+        "事件顺序和计数重置要可审计。"
+      ],
+      "open_questions": [
+        "完整逐bar计数、inside/outside处理与重置尚待专题核实。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-ten",
+          "locator": "Indexed H2/L2 section",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-china-1",
+          "locator": "Q4/Q6",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-2017-open-sample",
+          "locator": "Captions 38:05–38:11,40:19–45:56; sampled frame 41:45",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "double-bottom",
+        "double-top"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/advanced.py",
+            "symbols": "AdvancedDetector._attempts",
+            "sha256": "05043435dd73e6ea9f54fbf3ea5a18ece904055829bd6888fd1f310834bd2742"
+          }
+        ],
+        "limits": "H1/H2/L1/L2 strict attempt approximation; reference-crossing attempts counted before reset. Outside bars skipped; not complete Brooks H1-H4.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "二次入场依赖第一次尝试及其失败/回调过程，不是任意两个极值。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "事件顺序和计数重置要可审计。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "actual-risk",
+      "title": "Actual risk / 实际风险",
+      "aliases": [
+        "actual risk",
+        "实际风险",
+        "MAE",
+        "initial risk",
+        "初始风险"
+      ],
+      "category": "risk",
+      "summary": "初始止损风险、当前MAE、最终MAE与作者actual risk语境必须分开。",
+      "context": "预设风险是在入场时可知，最终逆向运动是事后量。",
+      "counterexample": "先小回撤再暴跌说明早期MAE不是风险上限；缺口和滑点还会使实际亏损超过初始止损预算。",
+      "causal_constraints": [
+        "最终MAE不得倒流到初始仓位或入场目标。"
+      ],
+      "open_questions": [
+        "作者actual risk具体终止事件尚未明确。",
+        "37AB样片11:19字幕措辞缺漏未核音；initial always greater不直接作为规则。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-china-2",
+          "locator": "Q8",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-37ab-sample",
+          "locator": "Captions 09:46–12:13; 11:19 wording unresolved",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "signal-entry-stop",
+        "trader-equation"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No source-faithful actual-risk lifecycle. Paper initial stop/risk handling is not this concept.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "初始止损风险、当前MAE、最终MAE与作者actual risk语境必须分开。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "最终MAE不得倒流到初始仓位或入场目标。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "trader-equation",
+      "title": "Trader equation / 交易者方程",
+      "aliases": [
+        "trader equation",
+        "交易者方程",
+        "期望收益",
+        "胜率"
+      ],
+      "category": "risk",
+      "summary": "概率必须和盈亏幅度及成本一起评估，图形好看不等于正期望。",
+      "context": "独立校准与交易执行条件不可省略。",
+      "counterexample": "教学胜率和有条件案例不等于SOXL净收益概率。",
+      "causal_constraints": [
+        "未校准时概率留空；保留全部失败与未成交。"
+      ],
+      "open_questions": [
+        "样本外校准、成本、选择偏差。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "methodology_only",
+      "sources": [
+        {
+          "source_id": "brooks-china-1",
+          "locator": "Q2",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "lo-mamaysky-wang",
+          "locator": "Abstract and algorithm sections",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "actual-risk",
+        "evidence-boundary"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "methodology_only",
+        "files": [],
+        "limits": "No calibrated win probability or live expectancy estimator; historical paper evaluation is separate.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "概率必须和盈亏幅度及成本一起评估，图形好看不等于正期望。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "未校准时概率留空；保留全部失败与未成交。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "evidence-boundary",
+      "title": "Evidence boundary / 证据边界",
+      "aliases": [
+        "evidence",
+        "证据等级",
+        "研究边界",
+        "统计验证"
+      ],
+      "category": "methodology",
+      "summary": "目录、文字稿、图例、作者观点、工程规则与统计证据是不同层次。",
+      "context": "公开可读不是开源许可，研究完成不等于功能实现。",
+      "counterexample": "条件分布差异不能直接推出扣费盈利。",
+      "causal_constraints": [
+        "保留阅读方式、页码和未取得内容；不把目录登记当视频观看。"
+      ],
+      "open_questions": [
+        "独立标注与足够长的样本外验证。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "methodology_only",
+      "sources": [
+        {
+          "source_id": "brooks-brazil",
+          "locator": "Q5/Q10/Q11",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "lo-mamaysky-wang",
+          "locator": "Abstract and selected method sections",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-course-index",
+          "locator": "193-item core index",
+          "support_role": "coverage_only"
+        },
+        {
+          "source_id": "brooks-42a-sample",
+          "locator": "Captions 01:13,10:12–13:23: uncertainty and participant-psychology caveats",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "trader-equation"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "methodology_only",
+        "files": [],
+        "limits": "Knowledge provenance policy, not a trading detector.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "目录、文字稿、图例、作者观点、工程规则与统计证据是不同层次。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "保留阅读方式、页码和未取得内容；不把目录登记当视频观看。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "candle-body-vs-range",
+      "title": "Candle body versus range / 实体与全幅",
+      "aliases": [
+        "engulfing",
+        "harami",
+        "吞没",
+        "孕线",
+        "inside bar",
+        "outside bar",
+        "内包",
+        "外包"
+      ],
+      "category": "foundations",
+      "summary": "实体吞没/孕线不等同于整个高低范围外包/内包。",
+      "context": "同一几何形状也会随前趋势改变解释。",
+      "counterexample": "锤头和吊颈不能只靠形状区分交易含义。",
+      "causal_constraints": [
+        "实体及全幅分别计算，背景不从后续结果提取。"
+      ],
+      "open_questions": [
+        "与Brooks信号条术语的逐项对照。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "nison-glossary",
+          "locator": "Selected candle definitions",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "setup",
+        "signal-entry-stop"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Explicit body fraction, close position and wick ratios; doji/trend/reversal observations.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "research_conclusion": "实体吞没/孕线不等同于整个高低范围外包/内包。",
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "实体及全幅分别计算，背景不从后续结果提取。"
+        ],
+        "warning": "These are research safeguards/proposed operational distinctions, not proof of source fidelity or authorization to add detectors."
+      },
+      "related_search_terms": [],
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "opening-breakout-mode",
+      "title": "Opening breakout mode / 开盘突破模式",
+      "aliases": [
+        "opening breakout mode",
+        "开盘突破模式",
+        "early BOM"
+      ],
+      "related_search_terms": [],
+      "category": "research_extensions",
+      "summary": "早盘新日高和新日低的反转可共同构成双向突破模式背景，不等同普通开盘区间突破。",
+      "research_conclusion": "早盘新日高和新日低的反转可共同构成双向突破模式背景，不等同普通开盘区间突破。",
+      "context": "样片偏开盘1–2小时，必须保留时段和两侧测试顺序。",
+      "counterexample": "任意晚盘宽摆动或首18条区间破位，不能自动称为同一种BOM。",
+      "causal_constraints": [
+        "先有当时可见日高/日低的测试反转证据，不用最终全天极值。"
+      ],
+      "open_questions": [
+        "两侧反转确认、窗口与缺失数据规则。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-2017-open-sample",
+          "locator": "Captions 16:56–23:29; sampled frame 18:25",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "opening-reversal",
+        "market-cycle"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "先有当时可见日高/日低的测试反转证据，不用最终全天极值。"
+        ],
+        "warning": "Original research safeguards, not source-prescribed numerical rules or permission to implement."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "measuring-vs-exhaustion",
+      "title": "Measuring versus exhaustion gap / 量度与衰竭",
+      "aliases": [
+        "量度缺口与衰竭缺口",
+        "measuring versus exhaustion gap"
+      ],
+      "related_search_terms": [],
+      "category": "research_extensions",
+      "summary": "量度与衰竭是随跟随及缺口维持/回补更新的假设，不是见大条立即决定。",
+      "research_conclusion": "量度与衰竭是随跟随及缺口维持/回补更新的假设，不是见大条立即决定。",
+      "context": "大跌后强反弹并深度回补支持双向区间情景，而非必然牛趋势。",
+      "counterexample": "作者承认某反向stop-entry是否有足够空间不知道；系统也应允许unknown。",
+      "causal_constraints": [
+        "区分首次缺口观察和后续分类确认时刻。",
+        "只用可测跟随、重叠、回补代理；不把强弱交易者心理当观测事实。"
+      ],
+      "open_questions": [
+        "缺口类型、回补深度及反向可交易空间的客观定义。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-42a-sample",
+          "locator": "Captions 00:44–10:09; sampled frames 07:46,08:56",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "gap-taxonomy",
+        "climax",
+        "surprise-bar"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "区分首次缺口观察和后续分类确认时刻。",
+          "只用可测跟随、重叠、回补代理；不把强弱交易者心理当观测事实。"
+        ],
+        "warning": "Original research safeguards, not source-prescribed numerical rules or permission to implement."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "confirmation-risk-tradeoff",
+      "title": "Confirmation versus risk distance / 确认与风险距离",
+      "aliases": [
+        "确认与风险距离",
+        "confirmation risk tradeoff"
+      ],
+      "related_search_terms": [],
+      "category": "research_extensions",
+      "summary": "早入可能止损距离较短但确认较少；晚入增加结构证据也可能扩大风险距离。",
+      "research_conclusion": "早入可能止损距离较短但确认较少；晚入增加结构证据也可能扩大风险距离。",
+      "context": "应比较同一结构不同入场政策和执行成本。",
+      "counterexample": "不能由盈亏比反推胜率；2R或分批退出计划不自动产生正期望。",
+      "causal_constraints": [
+        "每种政策先固定触发、止损、减仓及可知时间，再独立回放。"
+      ],
+      "open_questions": [
+        "条件胜率、净收益与尾部损失需独立统计。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-37ab-sample",
+          "locator": "Captions 06:57–12:13",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "trader-equation",
+        "actual-risk",
+        "signal-entry-stop"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "每种政策先固定触发、止损、减仓及可知时间，再独立回放。"
+        ],
+        "warning": "Original research safeguards, not source-prescribed numerical rules or permission to implement."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "support-resistance",
+      "title": "Support/resistance / 支撑阻力",
+      "aliases": [
+        "support resistance",
+        "支撑阻力",
+        "支撑",
+        "阻力",
+        "阻力转支撑"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "旧极值、价格区域、均线或趋势线可作为测试区域，突破后可能角色互换。",
+      "research_conclusion": "旧极值、价格区域、均线或趋势线可作为测试区域，突破后可能角色互换。",
+      "context": "区域而非必守精确价位。",
+      "counterexample": "价格可以穿越所谓支撑，角色互换也可能失败。",
+      "causal_constraints": [
+        "事先记录区域来源及有效时间，不能按结果重画。"
+      ],
+      "open_questions": [
+        "区宽与测试成功/失败的可重复定义。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "cme-support-resistance",
+          "locator": "Previous Highs and Lows; Trend Lines; final zones paragraph",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "breakout-test",
+        "trend-channel-lines"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "EMA20 separation/first return and frozen breakout tests only; no general level discovery.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "事先记录区域来源及有效时间，不能按结果重画。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "swing-structure",
+      "title": "Swing structure / 摆动结构",
+      "aliases": [
+        "swing structure",
+        "HH HL LH LL",
+        "摆动结构",
+        "更高高点",
+        "更低低点"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "HH/HL/LH/LL是相对先前摆动点的结构关系。",
+      "research_conclusion": "HH/HL/LH/LL是相对先前摆动点的结构关系。",
+      "context": "摆点规则与观察尺度必须明确。",
+      "counterexample": "局部HH并不自动推翻更大尺度空头结构。",
+      "causal_constraints": [
+        "比较发生时间与确认时间分开，未确认极值不当已知摆点。"
+      ],
+      "open_questions": [
+        "等高/等低与右侧确认窗口如何处理。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "swing high/low; higher high/low; lower high/low",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "market-cycle",
+        "multi-timeframe"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/core.py",
+            "symbols": "Engine.update",
+            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+          },
+          {
+            "path": "pa_lens/advanced.py",
+            "symbols": "AdvancedDetector._wedge and lifecycle",
+            "sha256": "05043435dd73e6ea9f54fbf3ea5a18ece904055829bd6888fd1f310834bd2742"
+          }
+        ],
+        "limits": "Delayed strict pivots, DB/DT and generic three-push local lifecycle; not parabolic acceleration or complete MTR.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "比较发生时间与确认时间分开，未确认极值不当已知摆点。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "always-in",
+      "title": "Always In / 假设必须持仓的方向",
+      "aliases": [
+        "Always In",
+        "AIL",
+        "AIS",
+        "始终持仓方向"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "Always In描述若必须选多空时较有把握的方向，不是强迫一直持仓。",
+      "research_conclusion": "Always In描述若必须选多空时较有把握的方向，不是强迫一直持仓。",
+      "context": "绑定时间尺度，可与更大通道方向不同。",
+      "counterexample": "不清楚时可未知；局部AIS不自动构成大级别反转。",
+      "causal_constraints": [
+        "不得把粗略trend_up/down标签静默改名为Always In。"
+      ],
+      "open_questions": [
+        "置信方向如何作可检验标注。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 02:38–11:17; sampled frames 07:10,10:40",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "market-cycle",
+        "multi-timeframe"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "不得把粗略trend_up/down标签静默改名为Always In。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "breakout-follow-through",
+      "title": "Breakout/follow-through / 突破与跟随",
+      "aliases": [
+        "breakout follow-through",
+        "跟随",
+        "突破跟随"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "突破是越过参考价；跟随是随后继续扩展该运动，两者不是同一时刻证据。",
+      "research_conclusion": "突破是越过参考价；跟随是随后继续扩展该运动，两者不是同一时刻证据。",
+      "context": "参考结构、收盘位置及后续条需分别记录。",
+      "counterexample": "弱跟随后若回调很浅且缺口保持，仍可能是强小回调趋势。",
+      "causal_constraints": [
+        "后续跟随不得倒流成突破条收盘已知条件。"
+      ],
+      "open_questions": [
+        "确认多少条以及何时承认失败。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "breakout; follow-through; follow-through bar",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "breakout-test",
+        "surprise-bar"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Ten-bar frozen range breakout and next-bar directional follow-through/failure; independent of legacy 20-bar MM.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "后续跟随不得倒流成突破条收盘已知条件。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "pullback-flag",
+      "title": "Pullback/flag / 回调与旗形",
+      "aliases": [
+        "pullback",
+        "flag",
+        "回调",
+        "旗形"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "回调是趋势、摆动或腿中的暂停/逆向运动；旗形解释预期原方向恢复。",
+      "research_conclusion": "回调是趋势、摆动或腿中的暂停/逆向运动；旗形解释预期原方向恢复。",
+      "context": "同一回调可在小周期形成反向趋势。",
+      "counterexample": "所谓回调可能延长为区间或演化为反转。",
+      "causal_constraints": [
+        "以候选标记回调，不能因最终恢复才追认原先为确定旗形。"
+      ],
+      "open_questions": [
+        "结束、失败和较大结构重置的边界。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "pullback",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "market-cycle",
+        "final-flag",
+        "second-entry"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Breakout test and high/low attempt episodes only; no generic flag detector.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "以候选标记回调，不能因最终恢复才追认原先为确定旗形。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "micro-channel",
+      "title": "Micro channel / 微通道",
+      "aliases": [
+        "micro channel",
+        "微通道"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "微通道是紧通道的极端形式，回调极少或极小。",
+      "research_conclusion": "微通道是紧通道的极端形式，回调极少或极小。",
+      "context": "不能把tight channel与micro channel当完全同义。",
+      "counterexample": "强微通道仍可能大反转，16条示例不是普适阈值。",
+      "causal_constraints": [
+        "保留每次回调的定义与尺度，不能只看连续同色条。"
+      ],
+      "open_questions": [
+        "允许多少小回调及与逐条HL定义的差异。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "micro channel; tight channel",
+          "support_role": "concept_support"
+        },
+        {
+          "source_id": "brooks-37ab-sample",
+          "locator": "Captions 02:08–05:43; sampled frame 03:57 shows labeled 16-bar bull microchannel followed by strong reversal. Audio not heard; not continuous video.",
+          "support_role": "counterexample_support"
+        }
+      ],
+      "related": [
+        "tight-channel",
+        "buying-pressure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Strict directional higher highs/lows or lower highs/lows plus non-opposing closes; excludes compressing inside bars; not all microchannels.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "保留每次回调的定义与尺度，不能只看连续同色条。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "inside-sequences",
+      "title": "Inside sequences / ii与ioi",
+      "aliases": [
+        "ii",
+        "ioi",
+        "连续内包",
+        "内外内"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "ii是连续嵌套内包；ioi是内包、外包、内包序列，可能构成双向突破候选。",
+      "research_conclusion": "ii是连续嵌套内包；ioi是内包、外包、内包序列，可能构成双向突破候选。",
+      "context": "区分全高低范围与较弱的仅实体版本。",
+      "counterexample": "只有序列形状不保证突破方向或跟随。",
+      "causal_constraints": [
+        "信号序列只在末条完成后认定；触发需后续价格。"
+      ],
+      "open_questions": [
+        "等价边界、母条范围与失败序列处理。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "ii; ioi",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "candle-body-vs-range",
+        "opening-breakout-mode"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Strict inside/outside ii/ioi with neutral candidate state; equal edges excluded.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "信号序列只在末条完成后认定；触发需后续价格。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "final-flag",
+      "title": "Final flag / 最后旗形",
+      "aliases": [
+        "final flag",
+        "最后旗形",
+        "末旗"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "趋势后期旗形可能成为最后延续结构，并在突破失败后转向。",
+      "research_conclusion": "趋势后期旗形可能成为最后延续结构，并在突破失败后转向。",
+      "context": "与三角形、区间、失败突破可重叠。",
+      "counterexample": "晚期盘整也可能继续有效延续，不能仅靠位置确认final。",
+      "causal_constraints": [
+        "先发布可能末旗，事后最终标签不得当实时先知。"
+      ],
+      "open_questions": [
+        "结构成熟度、确认和失败变体仍需图例。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 39:26–42:04; sampled frame 41:00",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "pullback-flag",
+        "failed-failure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "先发布可能末旗，事后最终标签不得当实时先知。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "multi-timeframe",
+      "title": "Multi-timeframe context / 多周期语境",
+      "aliases": [
+        "multi timeframe",
+        "MTF",
+        "多周期",
+        "多时间框架"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "同段走势在不同时间框架可有不同状态，小周期反向腿不等于大周期趋势结束。",
+      "research_conclusion": "同段走势在不同时间框架可有不同状态，小周期反向腿不等于大周期趋势结束。",
+      "context": "明确观察、确认和执行周期。",
+      "counterexample": "小周期Always In改变可仍处于大周期宽通道。",
+      "causal_constraints": [
+        "高周期完成条只能在其收盘后引用；未完成值另标临时，禁止回放用最终OHLC。"
+      ],
+      "open_questions": [
+        "时间对齐、会话边界和跨周期冲突政策。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-12a",
+          "locator": "Captions 00:00–02:38,07:41–11:17,14:43–26:23",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "market-cycle",
+        "always-in",
+        "swing-structure"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "高周期完成条只能在其收盘后引用；未完成值另标临时，禁止回放用最终OHLC。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "trend-channel-lines",
+      "title": "Trend/channel lines / 趋势线与通道线",
+      "aliases": [
+        "trend line",
+        "channel line",
+        "趋势线",
+        "通道线"
+      ],
+      "related_search_terms": [],
+      "category": "foundations",
+      "summary": "趋势线与通道另一侧的边界线承担不同位置角色，画法不必唯一。",
+      "research_conclusion": "趋势线与通道另一侧的边界线承担不同位置角色，画法不必唯一。",
+      "context": "锚点、尺度和是否允许异常点影响线的位置。",
+      "counterexample": "越线可只带来区间而非完全趋势反转。",
+      "causal_constraints": [
+        "保存每一版本锚点和生成时间；重画线不能改写过去信号。"
+      ],
+      "open_questions": [
+        "可重复选点与极端点处理。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "trend line; trend channel line; overshoot",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "support-resistance",
+        "tight-channel"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "保存每一版本锚点和生成时间；重画线不能改写过去信号。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "tight-trading-range",
+      "title": "Tight trading range / 紧区间",
+      "aliases": [
+        "tight trading range",
+        "TTR",
+        "紧区间"
+      ],
+      "related_search_terms": [
+        "barbwire"
+      ],
+      "category": "foundations",
+      "summary": "紧区间重叠较多，逆转空间可能不足以支持stop-entry获利。",
+      "research_conclusion": "紧区间重叠较多，逆转空间可能不足以支持stop-entry获利。",
+      "context": "应结合成本和目标尺度判断是否等待。",
+      "counterexample": "大条也可出现在barbwire；紧区间并非小实体同义词。",
+      "causal_constraints": [
+        "若评估可交易空间，应预先固定模拟入场及成本，不能推断真实交易者盈亏。"
+      ],
+      "open_questions": [
+        "宽度、重叠、成本与最低空间阈值。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_candidate_only",
+      "sources": [
+        {
+          "source_id": "brooks-glossary-selected",
+          "locator": "tight trading range; barbwire",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "market-cycle",
+        "trader-equation"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Eight-bar overlap/width heuristic; barbwire additionally needs doji; no exhaustive range taxonomy.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "若评估可交易空间，应预先固定模拟入场及成本，不能推断真实交易者盈亏。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules. No detector changes authorized by knowledge addition."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "order-trigger-vs-fill",
+      "title": "Order trigger versus fill / 触发与成交",
+      "aliases": [
+        "order trigger fill",
+        "触发与成交",
+        "stop limit",
+        "市价限价"
+      ],
+      "related_search_terms": [],
+      "category": "execution_context",
+      "tradition": "market_mechanics",
+      "summary": "触发、挂单和成交不同；市价价格不保证，限价和stop-limit可能不成交。",
+      "research_conclusion": "触发、挂单和成交不同；市价价格不保证，限价和stop-limit可能不成交。",
+      "context": "Management and market-mechanics boundary; not a standalone entry pattern.",
+      "counterexample": "OHLC触价不证明排队成交，也不说明同条内先止损还是先止盈。",
+      "causal_constraints": [
+        "预先规定订单类型、触发依据及路径不明处理；不按结果选择有利顺序。"
+      ],
+      "open_questions": [
+        "券商触发依据、部分成交及滑点模型待核。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "partial_engineering_approximation",
+      "sources": [
+        {
+          "source_id": "sec-orders",
+          "locator": "Market/Limit/Stop/Stop-limit sections",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "signal-entry-stop",
+        "session-and-liquidity-context"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/replay.py",
+            "symbols": "evaluate",
+            "sha256": "94de4dfa6530ea5c7cc8f333d8308c3a054348b7f1c2a21d0854ab9599b82fff"
+          }
+        ],
+        "limits": "Paper evaluate models conservative trigger/fill scenarios for existing events; no actual order routing, queue or broker-specific trigger model.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "预先规定订单类型、触发依据及路径不明处理；不按结果选择有利顺序。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "instrument-transfer-boundary",
+      "title": "Instrument transfer boundary / 跨标的迁移边界",
+      "aliases": [
+        "SOXL",
+        "每日三倍",
+        "跨标的迁移"
+      ],
+      "related_search_terms": [],
+      "category": "execution_context",
+      "tradition": "market_mechanics",
+      "summary": "SOXL追求指数单日300%表现，不保证实现，也不等于任意分钟或多日精确三倍。",
+      "research_conclusion": "SOXL追求指数单日300%表现，不保证实现，也不等于任意分钟或多日精确三倍。",
+      "context": "Management and market-mechanics boundary; not a standalone entry pattern.",
+      "counterexample": "ES的tick、点值、日波幅和教学成功率不能搬给SOXL。",
+      "causal_constraints": [
+        "用标的自身价格与一致复权口径形成结构；跨标的数据仅作有时间戳的独立背景。"
+      ],
+      "open_questions": [
+        "招募书、企业行动和历史复权口径仍需专门核对。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "direxion-soxl",
+          "locator": "Investment objective and daily-target limitations",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "evidence-boundary",
+        "multi-timeframe"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated complete implementation audited. Research addition does not enable trading or alter pattern rules.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "用标的自身价格与一致复权口径形成结构；跨标的数据仅作有时间戳的独立背景。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "session-and-liquidity-context",
+      "title": "Session/liquidity context / 时段与流动性",
+      "aliases": [
+        "盘外",
+        "RTH ETH",
+        "时段流动性",
+        "extended hours"
+      ],
+      "related_search_terms": [],
+      "category": "execution_context",
+      "tradition": "market_mechanics",
+      "summary": "盘外可能流动性低、价差大、报价分离且成交规则不同，不能与常规盘等同。",
+      "research_conclusion": "盘外可能流动性低、价差大、报价分离且成交规则不同，不能与常规盘等同。",
+      "context": "Management and market-mechanics boundary; not a standalone entry pattern.",
+      "counterexample": "没有quote数据不能断言spread正常；每日条数还受节假日及早收盘影响。",
+      "causal_constraints": [
+        "保存会话、时区、bar对齐和数据年龄；新闻因果与价格波动证据分开。"
+      ],
+      "open_questions": [
+        "交易所auction、停牌、LULD和当前券商时段规则尚未逐项核验。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "sec-extended-hours",
+          "locator": "Overview and Risks",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "opening-reversal",
+        "order-trigger-vs-fill"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated complete implementation audited. Research addition does not enable trading or alter pattern rules.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "保存会话、时区、bar对齐和数据年龄；新闻因果与价格波动证据分开。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "premise-failure-management",
+      "title": "Premise failure / 交易前提失效",
+      "aliases": [
+        "premise failure",
+        "disappointment",
+        "交易前提失效",
+        "失望退出"
+      ],
+      "related_search_terms": [],
+      "category": "execution_context",
+      "tradition": "Brooks",
+      "summary": "未出现预期跟随可以改变管理，而非等同固定分钟时间止损。",
+      "research_conclusion": "未出现预期跟随可以改变管理，而非等同固定分钟时间止损。",
+      "context": "Management and market-mechanics boundary; not a standalone entry pattern.",
+      "counterexample": "短暂横盘后仍可能恢复趋势，一根doji不是普适退出条件。",
+      "causal_constraints": [
+        "入场前保存预期行为及失效证据；不得事后挑选最有利退出理由。"
+      ],
+      "open_questions": [
+        "N条阈值、减仓比例与机会成本需事先定义和验证。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "experimental_observation_only",
+      "sources": [
+        {
+          "source_id": "brooks-time-stops",
+          "locator": "Complete official Audio transcript; time-stop and disappointing follow-through examples",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "breakout-follow-through",
+        "scale-in-and-exit-policy"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/observations.py",
+            "symbols": "ObservationDetector.update",
+            "sha256": "298a3b55c5beca7467ca08e7aa6165c73453a11c28546e93b825616489c8e068"
+          }
+        ],
+        "limits": "Close returning inside frozen breakout level records premise failure; no position-management action.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "入场前保存预期行为及失效证据；不得事后挑选最有利退出理由。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    },
+    {
+      "id": "scale-in-and-exit-policy",
+      "title": "Scale-in/exit policy / 加仓与分批退出",
+      "aliases": [
+        "scaling in",
+        "加仓",
+        "分批退出",
+        "分批止盈"
+      ],
+      "related_search_terms": [],
+      "category": "execution_context",
+      "tradition": "Brooks",
+      "summary": "宽止损小仓加仓、部分止盈和整体持仓是不同管理政策，不是一种通用形态。",
+      "research_conclusion": "宽止损小仓加仓、部分止盈和整体持仓是不同管理政策，不是一种通用形态。",
+      "context": "Management and market-mechanics boundary; not a standalone entry pattern.",
+      "counterexample": "保本故事不保证可保本成交；小额scalp盈利不能掩盖大浮亏。",
+      "causal_constraints": [
+        "任何加仓前重算组合风险和现金流；固定最大规模/次数，政策分别测试，默认不自动补亏损仓。"
+      ],
+      "open_questions": [
+        "总风险预算、退出顺序与真实流动性约束尚待授权和验证。"
+      ],
+      "evidence_status": "source_reviewed_unvalidated_on_soxl",
+      "implementation_status": "not_implemented",
+      "sources": [
+        {
+          "source_id": "brooks-scaling",
+          "locator": "Official transcript Parts 1 and 2",
+          "support_role": "concept_support"
+        }
+      ],
+      "related": [
+        "actual-risk",
+        "premise-failure-management"
+      ],
+      "code_mapping": {
+        "audited_at": "2026-11-18",
+        "status": "not_implemented",
+        "files": [],
+        "limits": "No dedicated complete implementation audited. Research addition does not enable trading or alter pattern rules.",
+        "coverage_reference": "docs/COVERAGE.md",
+        "snapshot_only": true
+      },
+      "engineering_interpretation": {
+        "status": "design_guidance_not_source_prescribed_rule",
+        "constraints": [
+          "任何加仓前重算组合风险和现金流；固定最大规模/次数，政策分别测试，默认不自动补亏损仓。"
+        ],
+        "warning": "Project synthesis, not author-prescribed numerical rules."
+      },
+      "claim_layers": {
+        "research_conclusion": "source_grounded_paraphrase",
+        "engineering_interpretation": "project_synthesis_not_author_rule",
+        "open_questions": "unverified_research_questions",
+        "general_knowledge_added_without_source": false
+      }
+    }
+  ]
+}

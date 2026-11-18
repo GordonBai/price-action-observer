@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Price Action Lens · 研究看盘</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0d121c;color:#dfe8f2}body{margin:0;max-width:1200px;padding:28px;margin:auto}h1{font-size:28px;margin-bottom:6px}p{line-height:1.65;color:#9fadc2}label{font-size:14px}input,select,button{background:#192334;border:1px solid #354760;color:#e7effb;border-radius:7px;padding:10px;margin:5px}button{cursor:pointer;background:#156b67}.row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.card{background:#141e2c;border:1px solid #26384e;border-radius:12px;padding:18px;margin-top:18px}.notice{font-size:13px}#status{color:#e9bb67}svg{display:block;width:100%;height:300px;background:#101824}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:10px 5px;border-bottom:1px solid #26384e;vertical-align:top}th{color:#9fadc2}.small{font-size:12px;color:#93a3ba}#error{color:#ffaaa5}a{color:#70c8ef}details{margin-top:9px}summary{cursor:pointer}.focus-row{background:#1d3541}#focus-info{color:#e9bb67}td:first-child{min-width:140px}button:focus-visible,select:focus-visible{outline:2px solid #70c8ef}@media(max-width:650px){body{padding:12px}td,th{font-size:12px;padding:7px 3px}td:first-child{min-width:80px}.card{padding:12px}}
+</style></head><body>
+<h1>Price Action Lens <span class="small">RESEARCH PREVIEW</span></h1><p>逐根已收盘 K 线 · 因果形态 · 中文证据解读。不是自动交易系统，不承诺覆盖全部 Brooks 形态。</p>
+<div class="row"><label>本地访问令牌 <input type="password" id="token" autocomplete="off" placeholder="PA_LENS_TOKEN"></label><button id="connect">读取 / 刷新</button><label><input type="checkbox" id="auto">每 5 秒刷新</label><select id="streams" aria-label="行情流"></select></div>
+<div id="error" role="alert"></div><div class="card"><strong id="status">尚未读取数据</strong><p id="notice" class="notice">接收器不是数据源。请先通过已验证的供应商适配器提交真实已收盘行情。历史回放不会被标为已验证实时行情。</p><div id="meta" class="small"></div></div>
+<div class="card"><h2>最近已收盘 OHLC 蜡烛</h2><svg id="chart" viewBox="0 0 1000 300" role="img" aria-label="已收盘OHLC蜡烛图"></svg><div id="range" class="small"></div><p id="focus-info" class="notice">显示当前快照；点击事件可隐藏其后的K线。</p><button id="clear-focus">返回最新快照</button></div>
+<div class="card"><h2>当前语境</h2><pre id="context">等待数据</pre></div>
+<div class="card"><h2>事件与解读 <span id="event-window" class="small">快照有限窗口；不是实际订单</span></h2><div class="row"><label>视图 <select id="event-mode"><option value="grouped">重点分组</option><option value="raw">原始事件</option></select></label><label>形态 <select id="family-filter"><option value="">全部</option></select></label><label>状态 <select id="status-filter"><option value="">全部</option></select></label><label id="basic-control"><input type="checkbox" id="show-basic">显示基础K线/缺口特征</label><span id="event-count" class="small"></span></div><details><summary>展示层过滤 / 冷却统计与配置</summary><pre id="display-stats">尚未读取</pre></details><table><thead><tr><th>可知时刻</th><th>形态 / 状态</th><th>证据解读</th></tr></thead><tbody id="events"></tbody></table></div>
+<script>
+'use strict';
+let snapshot=null,focusEvent=null,requestNumber=0;
+const $=id=>document.getElementById(id);
+function label(v){return typeof v==='string'?v:JSON.stringify(v??null,null,2)}
+function node(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=label(text);return n}
+function svgNode(tag,attrs){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));return n}
+function streamKey(s){return s?[s.symbol,s.timeframe,s.source].join('|'):''}
+function updateOptions(id,values){
+ const el=$(id),old=el.value;el.replaceChildren();
+ const empty=node('option','全部');empty.value='';el.append(empty);
+ for(const v of [...new Set(values)].sort()){const o=node('option',v);o.value=v;el.append(o)}
+ el.value=values.includes(old)?old:'';
+}
+function showDetails(parent,title,value){const d=node('details'),summary=node('summary',title);d.append(summary,node('pre',value));parent.append(d)}
+function renderChart(bars){
+ const chart=$('chart');chart.replaceChildren();
+ if(!bars.length){$('range').textContent='当前窗口没有可用K线；不能定位窗口外事件。';return}
+ const lo=Math.min(...bars.map(b=>b.low)),hi=Math.max(...bars.map(b=>b.high)),span=hi-lo||1;
+ const y=v=>265-(v-lo)/span*230,step=900/Math.max(1,bars.length),width=Math.max(1,Math.min(12,step*.65));
+ for(let i=0;i<bars.length;i++){
+  const b=bars[i],x=70+(i+.5)*step,color=b.close>=b.open?'#4ed5ba':'#ff8f87';
+  chart.append(svgNode('line',{class:'candle-wick',x1:x,x2:x,y1:y(b.high),y2:y(b.low),stroke:color}));
+  const candle=svgNode('rect',{class:'candle-body',x:x-width/2,y:Math.min(y(b.open),y(b.close)),width,height:Math.max(1,Math.abs(y(b.open)-y(b.close))),fill:color});
+  const title=svgNode('title',{});title.textContent=b.time+' | O '+b.open+' H '+b.high+' L '+b.low+' C '+b.close;candle.append(title);chart.append(candle);
+  if(focusEvent&&Date.parse(b.time)===Date.parse(focusEvent.observed_at))chart.append(svgNode('line',{x1:x,x2:x,y1:20,y2:275,stroke:'#e9bb67','stroke-dasharray':'3 3'}));
+ }
+ for(const [v,pos] of [[hi,25],[lo,285]]){const text=svgNode('text',{x:5,y:pos,fill:'#9fadc2','font-size':12});text.textContent=v.toFixed(4);chart.append(text)}
+ $('range').textContent=bars[0].time+' → '+bars[bars.length-1].time+'；绿色收涨/红色收跌，影线为最高最低；时间为收盘时间。';
+}
+function render(){
+ if(!snapshot)return;
+ const stream=snapshot.streams[Number($('streams').value)||0],state=stream?.state||{};
+ $('notice').textContent=snapshot.notice||'研究模式；尚未验证实时报价。';
+ $('status').textContent=stream?stream.freshness+' · '+stream.symbol+' / '+stream.timeframe+'m':'WAITING_FOR_DATA';
+ $('meta').textContent=stream?'来源: '+stream.source+' | 累计bar: '+stream.bar_count+' | 最近收盘: '+stream.last_bar_close+' | age: '+stream.age_seconds+'s':'';
+ const events=stream?.events||[],display=stream?.display;
+ const available=[...events,...(display?.groups||[]).flatMap(g=>g.events||[])];
+ if(focusEvent&&!available.some(e=>e.id===focusEvent.id))focusEvent=null;
+ $('display-stats').textContent=display?label({说明:'仅展示层降频；未删除原始审计事件。raw_events/displayed_events/displayed_groups及隐藏计数是截至最新快照的累计值；retained_groups仅为保留窗口，原始表也仅近200条，不是完整审计轨迹。统计不是事件时刻的识别准确率。',stats:display.stats,config:display.config,presentation_version:display.presentation_version}):'该快照没有服务端展示分组，暂显示原始事件。';
+ updateOptions('family-filter',available.map(e=>e.family));updateOptions('status-filter',available.map(e=>e.status));
+ const summary={};for(const k of ['context','bars_in_segment','gap_count','config_hash','knowledge_version','mode','coverage'])summary[k]=state[k]??null;
+ // Snapshot context is not historical state. Hide it when focusing an earlier event.
+ $('context').textContent=focusEvent?label({说明:'仅展示该事件当时保存的语境，不使用最新快照推断历史。',context:focusEvent.context??'事件未保存语境',knowledge_version:focusEvent.knowledge_version??null}):stream?label(summary):'等待数据';
+ const bars=(stream?.bars||[]).filter(b=>!focusEvent||Date.parse(b.time)<=Date.parse(focusEvent.observed_at));
+ renderChart(bars);
+ $('focus-info').textContent=focusEvent?'已定位可知时刻 '+focusEvent.observed_at+'；后续K线与事件已隐藏。摆动锚点的发生时刻不等于当时已确认。':'显示当前快照；点击事件可隐藏其后的K线。';
+ const body=$('events');body.replaceChildren();
+ const basicFamilies=new Set(['doji','trend_bar','gap_open','body_gap','micro_gap','micro_channel']);
+ const keep=e=>(!focusEvent||Date.parse(e.observed_at)<=Date.parse(focusEvent.observed_at))&&(!$('family-filter').value||e.family===$('family-filter').value)&&(!$('status-filter').value||e.status===$('status-filter').value);
+ const grouped=$('event-mode').value!=='raw'&&Array.isArray(display?.groups);
+ $('basic-control').hidden=!!display||$('event-mode').value==='raw';
+ $('event-window').textContent=grouped?'窗口：最近保留 '+display.groups.length+' 组；原始表为最近 '+events.length+' 条。下方统计为累计。':'窗口：最近 '+events.length+' 条原始事件，不是完整审计轨迹；累计统计另列。';
+ let rows;
+ if(grouped){rows=display.groups.map(g=>({...g,events:(g.events||[]).filter(keep)})).filter(g=>g.events.length)}
+ else {rows=events.filter(e=>keep(e)&&($('event-mode').value==='raw'||$('show-basic').checked||!basicFamilies.has(e.family)||$('family-filter').value===e.family)).map(e=>({observed_at:e.observed_at,events:[e]}))}
+ $('event-count').textContent=grouped?rows.length+' 个重点时间组（同bar聚合；原始事件可切换查看）':rows.length+' / '+events.length+' 条快照原始事件（时间 / 形态 / 状态筛选仅影响显示）';
+ for(const group of [...rows].reverse()){
+  const tr=node('tr');if(focusEvent&&Date.parse(focusEvent.observed_at)===Date.parse(group.observed_at))tr.setAttribute('class','focus-row');
+  const time=node('td'),button=node('button',group.observed_at);button.addEventListener('click',()=>{focusEvent=grouped?{...group.events[0],observed_at:group.observed_at,context:{contexts:group.contexts??[],note:group.context_note??'组内保存语境，不使用最新状态'}}:group.events[0];render()});time.append(button);tr.append(time);
+  tr.append(node('td',grouped?group.events.length+' 项观察 · 优先级 '+group.priority: [group.events[0].family,group.events[0].status,group.events[0].direction].filter(Boolean).join(' / ')));
+  const cell=node('td');
+  for(const event of group.events){
+  const explanation=node('section');
+  if(grouped)explanation.append(node('strong',[event.family,event.status,event.direction].filter(Boolean).join(' / ')));
+  explanation.append(node('div',event.explanation||event.evidence));
+  if(event.uncertainty)explanation.append(node('p',event.uncertainty));
+  const levels={};for(const key of ['observed_at','confirmed_at','trigger','stop','target','anchors','evidence','rule_version','knowledge_version'])if(event[key]!==undefined&&event[key]!==null)levels[key]=event[key];
+  showDetails(explanation,'证据 / 锚点 / 观察时间（非订单）',levels);
+  for(const ref of event.knowledge_references||[]){
+   const d=node('details');d.append(node('summary',ref.title||ref.id),node('p',ref.summary),node('p','反例 / 边界：'+(ref.counterexample||'未提供')));
+   for(const url of ref.source_urls||[]){try{const parsed=new URL(url);if(!['https:','http:'].includes(parsed.protocol))continue;const a=node('a',parsed.hostname+' · 来源');a.setAttribute('href',parsed.href);a.setAttribute('target','_blank');a.setAttribute('rel','noopener noreferrer');d.append(a,node('br'))}catch{}}
+   if(ref.sources?.length)showDetails(d,'来源阅读范围与限制',ref.sources);
+   explanation.append(d);
+  }
+  cell.append(explanation);
+  }
+  tr.append(cell);body.append(tr);
+ }
+}
+async function refresh(){
+ const request=++requestNumber;
+ $('error').textContent='';
+ try{
+  const response=await fetch('/snapshot',{headers:{Authorization:'Bearer '+$('token').value},cache:'no-store'});
+  if(!response.ok)throw new Error(response.status===401?'令牌无效；数据未读取。':'读取失败: HTTP '+response.status);
+  const next=await response.json();if(request!==requestNumber)return;
+  if(!Array.isArray(next.streams))throw new Error('快照格式不正确');
+  const oldKey=streamKey(snapshot?.streams[Number($('streams').value)||0]);
+  snapshot=next;$('streams').replaceChildren();
+  snapshot.streams.forEach((s,i)=>{const o=node('option',s.symbol+' · '+s.timeframe+' · '+s.source);o.value=String(i);$('streams').append(o)});
+  const selected=snapshot.streams.findIndex(s=>streamKey(s)===oldKey);$('streams').value=String(selected<0?0:selected);
+  render();
+ }catch(e){if(request!==requestNumber)return;$('error').textContent=e.message;$('status').textContent='DISCONNECTED · 当前展示若有数据则为上次快照';}
+}
+$('connect').addEventListener('click',refresh);
+$('streams').addEventListener('change',()=>{focusEvent=null;$('family-filter').value='';$('status-filter').value='';render()});
+$('event-mode').addEventListener('change',render);
+$('show-basic').addEventListener('change',render);
+$('family-filter').addEventListener('change',render);$('status-filter').addEventListener('change',render);
+$('clear-focus').addEventListener('click',()=>{focusEvent=null;render()});
+setInterval(()=>{if($('auto').checked&&$('token').value)refresh()},5000);
+</script></body></html>

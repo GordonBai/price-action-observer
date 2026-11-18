@@ -1,0 +1,37 @@
+# Observation coverage and timing contract · v0.3
+
+44 curated knowledge cards are not 44 completed detectors. These are original, deterministic engineering approximations, not official Brooks algorithms or empirically calibrated probabilities. Source-reading provenance and limits remain in `knowledge/concepts.json`. No full-course/video mastery is claimed.
+
+| Family | Operational subset | Important limit |
+|---|---|---|
+| DB / DT | Strict 2-left/2-right pivots; 0.6 ATR similarity; 1 ATR rebound; candidate, neckline close, invalidation, expiry | Not all Brooks double-bottom/top variants; first knowledge time is delayed |
+| H1/H2/L1/L2 | Rearmed high/low attempts, episode expiry, context labels | Outside bars excluded, equal extremes not attempts; not complete H1–H4 rules |
+| Three-push wedge | Alternating confirmed pivots; third need not exceed second; later local counter-swing break / invalidation / expiry | Local structural confirmation is NOT complete MTR or proof of reversal |
+| ii / ioi | Strict nested inside/outside sequence | Neutral candidate; equal-edge variants excluded |
+| Candle observations | Doji, trend bar, reversal-bar candidate using explicit body/range/close thresholds | Shape is not setup quality or a buy/sell instruction |
+| Microchannel | Four or more bars with both bounds advancing and non-opposing closes | Not all tight channels; emits evolving run observations |
+| Gap taxonomy | Adjacent open gap, nonoverlapping bodies, three-bar microgap with directional middle bar | No automatic measuring/exhaustion classification |
+| EMA gap / first return | EMA20 recursive close seed; starts after 20 bars; 10 separated bars before first-return observation | Per-session seed, not broker's overnight EMA; moving reference, not fixed price target |
+| Tight range / barbwire | 8 bars, adjacent overlap >=85%, total width <=2.5 ATR; barbwire additionally has small-body bar | Heuristic subset, not synonyms; not all range variants |
+| Surprise / climax | Range >=2x preceding ten-bar average, large body; directional context makes climax candidate | No trend-maturity test; expansion could be continuation; no calibrated forecast |
+| Breakout / follow-through / failure / test | Frozen preceding 10-bar overlapping range, next-bar continuation check, close back inside, touch/reclaim or space-preserving test | Independent observational window from legacy 20-bar range/MM; labels may overlap and are not independent evidence |
+| MM | Range/DB height projections; manual AB=CD helper | Target touch != reversal, no automatic equal-leg anchor selection |
+| Context | 20-bar directional efficiency heuristic | Not complete market-cycle/Always-In model |
+| Source grounding | IDs, summaries, counterexamples, source links, knowledge hash on events | Citation identifies conceptual basis, not endorsement of thresholds |
+| Audit | Known-case replay, frozen weekly calendar sample, event anchors and separately marked posthoc paths | Human labels initially blank; precision/recall/insight accuracy unknown |
+
+## Explicitly incomplete
+Full MTR trend-line break/retest models, final flags, failed failures, second-leg traps, parabolic acceleration geometry, opening-reversal regimes, broad channels, automatic support/resistance selection, multi-timeframe confirmation and all higher-order variants are not claimed. Risk/position-management, execution and product-boundary cards remain explanations or methodology, not auto-trading policies.
+
+## Causality and versioning
+Each event has `observed_at`, status, anchors, code/config version, knowledge hash, source references and uncertainty. Right-confirmed pivots retain their occurrence times but are published only after confirmation. Future bars cannot rewrite an earlier emitted event. OHLC ambiguity cannot be resolved by assuming intrabar order. A local structural confirmation proves only the specified closed-bar condition.
+
+Session-date change (America/New_York) and missing same-session intervals reset structures. Live/replay share one engine. Journals pin code, configuration and knowledge hashes; changed inputs or definitions require a new database. No silent history rewriting. Detector state and recent event retention are bounded; current-session bar history and on-disk journals still require resource planning. A 24-hour non-US feed does not have US-equity session semantics merely because input validation accepts its symbol.
+
+## Evaluation purpose
+The primary deliverable is chart observation and explanation correctness. `replay` no longer automatically evaluates a trading strategy. `evaluate` retains an explicitly separate legacy hypothetical-policy experiment; its returns are not pattern accuracy. Actual direction afterwards is a diagnostic, not proof that a neutral shape or candidate was correctly identified. Precision and recall require a predefined independent annotation rubric, both event and no-event windows, and inter-rater checks.
+
+## Display priority is not prediction confidence
+The receiver defaults to priority 3 (key structural lifecycle changes), a 15-minute cooldown per family/status/direction, and one combined display group per closed bar. `--display-min-priority 2` includes candidate observations; `0` and `--display-cooldown-minutes 0` can expose everything. None of these options changes raw detector events or raises identification accuracy. A newly distinct pattern with the same editorial key can be hidden during cooldown, so the raw tape remains necessary for detailed review.
+
+Display state is incremental, bounded and rebuilt from the complete journal, not recalculated from a sliding 200-event tail. Its settings are pinned in the journal identity. The panel distinguishes cumulative filtering totals from retained recent groups, and provides an original-event mode. Range/warmup contexts say observation-first, not buy/sell advice. This is visual noise control, not a permission to send unsolicited alerts.

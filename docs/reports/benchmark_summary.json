@@ -1,0 +1,171 @@
+{
+  "benchmark": "daily_RTH_open_buy_last_bar_close_sell_100pct_notional_long_only",
+  "policy": "Independent precommitted opening-entry baseline; not derived from close-time signals. Compounds full equity once per observed session.",
+  "cost_model": "same adverse entry*(1+bps/10000), exit*(1-bps/10000), per side; illustrative friction, not measured fills",
+  "limitations": [
+    "Different holding duration/exposure/risk from the PA policy; not an equal-risk comparison.",
+    "Bar open/close are price proxies, not guaranteed executable fills; no spread quotes or market impact.",
+    "Last observed bar is an endpoint assumption; observed coverage is checked below, not silently treated as complete.",
+    "No overnight holdings; return excludes any distributions paid only to holders through ex-date.",
+    "Default adjustment from connector remains unverified; prices use the same dataset as PA evaluation."
+  ],
+  "input_sha256": "6a6a8b8374d02ac8b96b2e8ec8c0eab3b915e0cc4f11b1d59c5753fbcdee0434",
+  "splits": {
+    "development": {
+      "label": "chronological_development",
+      "sessions": 32,
+      "bars": 12480,
+      "cost_scenarios": {
+        "0": {
+          "cost_bps_per_side": 0,
+          "trades": 32,
+          "turnover_sides": 64,
+          "net_return": 0.04446788497618326,
+          "max_close_marked_drawdown": 0.28609412018810054,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "1": {
+          "cost_bps_per_side": 1,
+          "trades": 32,
+          "turnover_sides": 64,
+          "net_return": 0.03780463563190284,
+          "max_close_marked_drawdown": 0.2876629867429299,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "3": {
+          "cost_bps_per_side": 3,
+          "trades": 32,
+          "turnover_sides": 64,
+          "net_return": 0.024605391102040963,
+          "max_close_marked_drawdown": 0.29079038441636607,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "5": {
+          "cost_bps_per_side": 5,
+          "trades": 32,
+          "turnover_sides": 64,
+          "net_return": 0.01157401867224439,
+          "max_close_marked_drawdown": 0.2939040521411216,
+          "exposure": "full observed RTH session, no overnight"
+        }
+      }
+    },
+    "validation": {
+      "label": "chronological_validation",
+      "sessions": 17,
+      "bars": 6630,
+      "cost_scenarios": {
+        "0": {
+          "cost_bps_per_side": 0,
+          "trades": 17,
+          "turnover_sides": 34,
+          "net_return": -0.16743969624722654,
+          "max_close_marked_drawdown": 0.2703496071506224,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "1": {
+          "cost_bps_per_side": 1,
+          "trades": 17,
+          "turnover_sides": 34,
+          "net_return": -0.17026559454002665,
+          "max_close_marked_drawdown": 0.27180744961277126,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "3": {
+          "cost_bps_per_side": 3,
+          "trades": 17,
+          "turnover_sides": 34,
+          "net_return": -0.1758886486892255,
+          "max_close_marked_drawdown": 0.2747144021592587,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "5": {
+          "cost_bps_per_side": 5,
+          "trades": 17,
+          "turnover_sides": 34,
+          "net_return": -0.1814735964473173,
+          "max_close_marked_drawdown": 0.27760975046644987,
+          "exposure": "full observed RTH session, no overnight"
+        }
+      }
+    },
+    "frozen_evaluation": {
+      "label": "fixed_config_historical_evaluation_not_pristine_after_inspection",
+      "sessions": 16,
+      "bars": 6240,
+      "cost_scenarios": {
+        "0": {
+          "cost_bps_per_side": 0,
+          "trades": 16,
+          "turnover_sides": 32,
+          "net_return": -0.2532479538128819,
+          "max_close_marked_drawdown": 0.5209790281840588,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "1": {
+          "cost_bps_per_side": 1,
+          "trades": 16,
+          "turnover_sides": 32,
+          "net_return": -0.25563374107314496,
+          "max_close_marked_drawdown": 0.5215535085949687,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "3": {
+          "cost_bps_per_side": 3,
+          "trades": 16,
+          "turnover_sides": 32,
+          "net_return": -0.26038247318430385,
+          "max_close_marked_drawdown": 0.5227004033997642,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "5": {
+          "cost_bps_per_side": 5,
+          "trades": 16,
+          "turnover_sides": 32,
+          "net_return": -0.26510091101993505,
+          "max_close_marked_drawdown": 0.5238445490944583,
+          "exposure": "full observed RTH session, no overnight"
+        }
+      }
+    },
+    "known_case_2026_11_17": {
+      "label": "known_case_not_blind",
+      "sessions": 1,
+      "bars": 390,
+      "cost_scenarios": {
+        "0": {
+          "cost_bps_per_side": 0,
+          "trades": 1,
+          "turnover_sides": 2,
+          "net_return": -0.028448668448668557,
+          "max_close_marked_drawdown": 0.13355113355113368,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "1": {
+          "cost_bps_per_side": 1,
+          "trades": 1,
+          "turnover_sides": 2,
+          "net_return": -0.02864295928589522,
+          "max_close_marked_drawdown": 0.13372440599717883,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "3": {
+          "cost_bps_per_side": 3,
+          "trades": 1,
+          "turnover_sides": 2,
+          "net_return": -0.02903142442080775,
+          "max_close_marked_drawdown": 0.13407084695698124,
+          "exposure": "full observed RTH session, no overnight"
+        },
+        "5": {
+          "cost_bps_per_side": 5,
+          "trades": 1,
+          "turnover_sides": 2,
+          "net_return": -0.029419734247320473,
+          "max_close_marked_drawdown": 0.1344171494096532,
+          "exposure": "full observed RTH session, no overnight"
+        }
+      }
+    }
+  }
+}
