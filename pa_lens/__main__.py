@@ -25,6 +25,8 @@ def main():
     poll.add_argument('--serve-port',type=int,help='optional same-process localhost panel using PA_LENS_TOKEN')
     for name in ('fetch-robinhood','poll-robinhood'):
         rh=sub.add_parser(name,help='primary read-only Robinhood MCP acquisition; no fallback')
+        if name=='poll-robinhood':
+            rh.add_argument('--output',choices=['tui','text','jsonl'],help='terminal format: TUI on request, text on a TTY, JSONL when piped')
         rh.add_argument('--symbols',nargs='+',default=['SOXL'])
         rh.add_argument('--start',required=name=='fetch-robinhood',help='RFC3339 range start; poll default uses lookback')
         rh.add_argument('--end',required=name=='fetch-robinhood',help='RFC3339 fixed end; poll default is now')
@@ -116,8 +118,9 @@ def _run_robinhood(args,parser):
     from .robinhood import open_robinhood,RobinhoodError,_time,_symbols,_options,INTERVAL_MINUTES
     from .rh_runtime import acquire,next_poll_delay,poll_start,poll_windows,source_identity
     from .service import Journal,make_server
+    from .terminal_monitor import TerminalMonitor,format_tui,terminal_output
     from .native_runtime import native_specs,validate_native,acquire_native,restore_native_start,context_specs
-    import math,time,threading
+    import math,time,threading,shutil
     _symbols(args.symbols);_options('5minute' if args.interval=='15minute' else args.interval,args.bounds,args.adjustment)
     if args.interval=='15minute' and args.bounds!='regular':parser.error('derived 15minute requires regular bounds')
     next_poll_delay(datetime.now(timezone.utc),args.interval,args.settle_seconds)
@@ -144,6 +147,8 @@ def _run_robinhood(args,parser):
     Path(args.db).parent.mkdir(parents=True,exist_ok=True)
     journal=Journal(args.db,display_config={'min_priority':args.display_min_priority,'cooldown_minutes':args.display_cooldown_minutes})
     server=None
+    output=terminal_output(getattr(args,'output',None),sys.stdout) if args.command=='poll-robinhood' else 'jsonl'
+    terminal=TerminalMonitor(args.symbols) if output in ('text','tui') else None
     try:
         if specs and native_start is None:
             saved_start=restore_native_start(journal,args.symbols,specs,args.bounds,args.adjustment)
@@ -160,12 +165,14 @@ def _run_robinhood(args,parser):
                 source=source_identity(args.interval,args.bounds,args.adjustment,args.accept_unknown)
                 windows=poll_windows(journal,args.symbols,end,args.interval,args.lookback_minutes,source,
                                      explicit_start=_time(args.start) if args.start else None)
+                receipts=[]
                 try:
                     for symbols,start in windows:
                         result=acquire(provider,journal,symbols,start,end,interval=args.interval,bounds=args.bounds,
                             adjustment_type=args.adjustment,accept_unknown=args.accept_unknown,capture_dir=args.capture_dir,include_quotes=args.quotes)
                         if specs:result['provider_indicators']='SEPARATE_NATIVE_REQUESTS_FOLLOW'
-                        print(json.dumps(result,ensure_ascii=False),flush=True)
+                        if terminal:receipts.append((symbols,result))
+                        else:print(json.dumps(result,ensure_ascii=False),flush=True)
                 except (RobinhoodError,ValueError):
                     # Fail visibly, not indefinite silent retries or alternate providers.
                     raise ValueError('Robinhood acquisition/validation failed; inspect local health/audit. No fallback was used.') from None
@@ -176,10 +183,20 @@ def _run_robinhood(args,parser):
                         native_start=min([_time(t) for t in coverage if t]+[start for _,start in windows])
                     native=acquire_native(provider,journal,args.symbols,native_start,end,specs,bounds=args.bounds,
                         adjustment_type=args.adjustment,capture_dir=args.capture_dir)
-                    print(json.dumps({'native_indicators':native,'pa_interval':args.interval,'native_input_window_start':native_start.isoformat(),
+                    if not terminal:print(json.dumps({'native_indicators':native,'pa_interval':args.interval,'native_input_window_start':native_start.isoformat(),
                         'notice':'Native values inform current indicator context only; pure candle patterns and historical events are unchanged. Warmup/source quality unknown; not calibrated signals.'},ensure_ascii=False),flush=True)
-                current=journal.snapshot()
-                print(json.dumps({'native_pa_context':[{'symbol':s['symbol'],'timeframe':s['timeframe'],**s['native_interpretation']} for s in current['streams'] if s['symbol'] in args.symbols and s['source']==source]},ensure_ascii=False),flush=True)
+                displayed_at=datetime.now(timezone.utc)
+                current=journal.snapshot(now=displayed_at)
+                if terminal:
+                    view=terminal.view(current,receipts,now=displayed_at,source=source,
+                                       fixed_end=bool(args.end),native_enabled=bool(specs))
+                    if output=='tui':
+                        try:size=os.get_terminal_size(sys.stdout.fileno())
+                        except (OSError,ValueError):size=shutil.get_terminal_size(fallback=(80,24))
+                        canvas=format_tui(view,width=size.columns,height=size.lines,color='NO_COLOR' not in os.environ)
+                        print('\x1b[2J\x1b[H'+canvas,end='',flush=True)
+                    else:print(view['text'],flush=True)
+                else:print(json.dumps({'native_pa_context':[{'symbol':s['symbol'],'timeframe':s['timeframe'],**s['native_interpretation']} for s in current['streams'] if s['symbol'] in args.symbols and s['source']==source]},ensure_ascii=False),flush=True)
                 iterations+=1
                 if args.command=='fetch-robinhood' or args.once or (args.count and iterations>=args.count):break
                 delay=next_poll_delay(datetime.now(timezone.utc),args.interval,args.settle_seconds) if args.align_close else args.poll_seconds
@@ -188,6 +205,7 @@ def _run_robinhood(args,parser):
         raise ValueError(str(exc)) from None
     except KeyboardInterrupt:pass
     finally:
+        if terminal and output=='tui' and terminal.round:print(flush=True)
         if server:server.shutdown();server.server_close()
         journal.close()
 

@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Price Action Lens · 研究看盘</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0d121c;color:#dfe8f2}body{margin:0;max-width:1200px;padding:28px;margin:auto}h1{font-size:28px;margin-bottom:6px}p{line-height:1.65;color:#9fadc2}label{font-size:14px}input,select,button{background:#192334;border:1px solid #354760;color:#e7effb;border-radius:7px;padding:10px;margin:5px}button{cursor:pointer;background:#156b67}.row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.card{background:#141e2c;border:1px solid #26384e;border-radius:12px;padding:18px;margin-top:18px}.notice{font-size:13px}#status{color:#e9bb67}svg{display:block;width:100%;height:300px;background:#101824}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:10px 5px;border-bottom:1px solid #26384e;vertical-align:top}th{color:#9fadc2}.small{font-size:12px;color:#93a3ba}#error{color:#ffaaa5}a{color:#70c8ef}details{margin-top:9px}summary{cursor:pointer}.focus-row{background:#1d3541}#focus-info{color:#e9bb67}td:first-child{min-width:140px}button:focus-visible,select:focus-visible{outline:2px solid #70c8ef}@media(max-width:650px){body{padding:12px}td,th{font-size:12px;padding:7px 3px}td:first-child{min-width:80px}.card{padding:12px}}
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0d121c;color:#dfe8f2}body{margin:0;max-width:1200px;padding:28px;margin:auto}h1{font-size:28px;margin-bottom:6px}p{line-height:1.65;color:#9fadc2}label{font-size:14px}input,select,button{background:#192334;border:1px solid #354760;color:#e7effb;border-radius:7px;padding:10px;margin:5px}button{cursor:pointer;background:#156b67}.row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.card{background:#141e2c;border:1px solid #26384e;border-radius:12px;padding:18px;margin-top:18px}.notice{font-size:13px}#status{color:#e9bb67}.bar-hit-target:focus,.pa-event-marker:focus{outline:2px solid #70c8ef}.pa-event-marker{cursor:help}svg{display:block;width:100%;height:300px;background:#101824}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:10px 5px;border-bottom:1px solid #26384e;vertical-align:top}th{color:#9fadc2}.small{font-size:12px;color:#93a3ba}#error{color:#ffaaa5}a{color:#70c8ef}details{margin-top:9px}summary{cursor:pointer}.focus-row{background:#1d3541}#focus-info{color:#e9bb67}td:first-child{min-width:140px}button:focus-visible,select:focus-visible{outline:2px solid #70c8ef}@media(max-width:650px){body{padding:12px}td,th{font-size:12px;padding:7px 3px}td:first-child{min-width:80px}.card{padding:12px}}
 </style></head><body>
 <h1>Price Action Lens <span class="small">RESEARCH PREVIEW</span></h1><p>逐根已收盘 K 线 · 因果形态 · 中文证据解读。不是自动交易系统，不承诺覆盖全部 Brooks 形态。</p>
 <div class="row"><label>本地访问令牌 <input type="password" id="token" autocomplete="off" placeholder="PA_LENS_TOKEN"></label><button id="connect">读取 / 刷新</button><label><input type="checkbox" id="auto">每 5 秒刷新</label><select id="streams" aria-label="行情流"></select></div>
 <div id="error" role="alert"></div><div class="card"><strong id="status">尚未读取数据</strong><p id="notice" class="notice">接收器不是数据源。请先通过已验证的供应商适配器提交真实已收盘行情。历史回放不会被标为已验证实时行情。</p><div id="meta" class="small"></div></div>
 <div class="card"><h2>原生优先 PA 指标解读</h2><div id="native-context" style="white-space:pre-line;line-height:1.8">等待匹配原生 EMA20 / RSI14；不回退本地值。</div><details><summary>完整证据 / 参数 / 时间与质量</summary><pre id="native-context-evidence">尚无证据</pre></details></div>
-<div class="card"><h2>最近已收盘 OHLC 蜡烛</h2><svg id="chart" viewBox="0 0 1000 300" role="img" aria-label="已收盘OHLC蜡烛图"></svg><div id="range" class="small"></div><p id="focus-info" class="notice">显示当前快照；点击事件可隐藏其后的K线。</p><button id="clear-focus">返回最新快照</button></div>
+<div class="card"><h2>最近已收盘 OHLC 蜡烛</h2><svg id="chart" viewBox="0 0 1000 300" role="img" aria-label="已收盘OHLC蜡烛图"></svg><div id="range" class="small"></div><div id="chart-tooltip" role="status" aria-live="polite" style="white-space:pre-wrap;line-height:1.6;min-height:5em;padding:10px;border:1px solid #354760">悬停、点按或用 Tab 聚焦 K 线 / PA 标记，读取对应数据。</div><p id="focus-info" class="notice">显示当前快照；点击事件可隐藏其后的K线。</p><button id="clear-focus">返回最新快照</button></div>
 <div class="card"><h2>Robinhood 原生指标 <span class="small">用于当前指标语境，不改写纯K线形态或历史事件</span></h2><p id="native-notice" class="small">默认请求原生 EMA20 / RSI14；扩展指标可显式选择。</p><div id="native-indicators"></div></div>
 <div class="card"><h2>纯价格结构语境</h2><pre id="context">等待数据</pre></div>
 <div class="card"><h2>事件与解读 <span id="event-window" class="small">快照有限窗口；不是实际订单</span></h2><div class="row"><label>视图 <select id="event-mode"><option value="grouped">重点分组</option><option value="raw">原始事件</option></select></label><label>形态 <select id="family-filter"><option value="">全部</option></select></label><label>状态 <select id="status-filter"><option value="">全部</option></select></label><label id="basic-control"><input type="checkbox" id="show-basic">显示基础K线/缺口特征</label><span id="event-count" class="small"></span></div><details><summary>展示层过滤 / 冷却统计与配置</summary><pre id="display-stats">尚未读取</pre></details><table><thead><tr><th>可知时刻</th><th>形态 / 状态</th><th>证据解读</th></tr></thead><tbody id="events"></tbody></table></div>
@@ -27,9 +27,36 @@ function updateOptions(id,values){
  el.value=values.includes(old)?old:'';
 }
 function showDetails(parent,title,value){const d=node('details'),summary=node('summary',title);d.append(summary,node('pre',value));parent.append(d)}
-function renderChart(bars){
+function chartDescription(bar,stream,events=[]){
+ const timeframe=bar.timeframe||stream?.timeframe||'未知',symbol=bar.symbol||stream?.symbol||'';
+ const stamp=Date.parse(bar.time),daily=timeframe==='D';
+ const ny=new Intl.DateTimeFormat('zh-CN',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(stamp));
+ const rows=[symbol+' · 周期 '+(daily?'日线 D':timeframe+' 分钟')];
+ if(daily)rows.push('交易日 '+new Date(stamp-86400000).toISOString().slice(0,10)+'；保守可知时间 '+bar.time+'（不是交易日收市时刻）');
+ else rows.push('已收盘时间 '+bar.time);
+ rows.push('纽约时间 '+ny+'（America/New_York）','O '+bar.open+'  H '+bar.high+'  L '+bar.low+'  C '+bar.close);
+ for(const event of events){
+  rows.push('PA观察 / 确认：'+event.family+' · '+event.status+' · '+(event.direction||'未标方向'),
+   '可知时刻 '+event.observed_at+'；确认 '+(event.confirmed_at||'尚无确认时刻'),
+   '既有判断：'+label(event.explanation??event.evidence??'未提供'),
+   '质量：'+label(event.data_quality??'事件未标质量')+'；不是新增买卖指令。');
+  if(event.anchors)rows.push('原始锚点（不代表当时已知）：'+label(event.anchors));
+ }
+ return rows.join('\n');
+}
+function bindChartHint(element,text){
+ element.setAttribute('tabindex','0');element.setAttribute('role','img');element.setAttribute('aria-label',text);
+ const show=()=>{$('chart-tooltip').textContent=text};
+ for(const event of ['mouseenter','focus','click'])element.addEventListener(event,show);
+ element.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();show()}if(event.key==='Escape')$('chart-tooltip').textContent='已关闭提示；可继续 Tab 切换。'});
+ const title=svgNode('title',{});title.textContent=text;element.append(title);
+}
+function renderChart(bars,stream,visibleEvents=[]){
  const chart=$('chart');chart.replaceChildren();
+ $('chart-tooltip').textContent='悬停、点按或用 Tab 聚焦 K 线 / PA 标记；标记位于可知时刻，不回画到早先锚点。';
  if(!bars.length){$('range').textContent='当前窗口没有可用K线；不能定位窗口外事件。';return}
+ const eventMap=new Map();for(const event of visibleEvents){const t=Date.parse(event.observed_at);if(!eventMap.has(t))eventMap.set(t,[]);if(!eventMap.get(t).some(e=>e.id===event.id))eventMap.get(t).push(event)}
+ const markers=[];
  const lo=Math.min(...bars.map(b=>b.low)),hi=Math.max(...bars.map(b=>b.high)),span=hi-lo||1;
  const y=v=>265-(v-lo)/span*230,step=900/Math.max(1,bars.length),width=Math.max(1,Math.min(12,step*.65));
  for(let i=0;i<bars.length;i++){
@@ -37,10 +64,15 @@ function renderChart(bars){
   chart.append(svgNode('line',{class:'candle-wick',x1:x,x2:x,y1:y(b.high),y2:y(b.low),stroke:color}));
   const candle=svgNode('rect',{class:'candle-body',x:x-width/2,y:Math.min(y(b.open),y(b.close)),width,height:Math.max(1,Math.abs(y(b.open)-y(b.close))),fill:color});
   const title=svgNode('title',{});title.textContent=b.time+' | O '+b.open+' H '+b.high+' L '+b.low+' C '+b.close;candle.append(title);chart.append(candle);
+  const matched=eventMap.get(Date.parse(b.time))||[];
+  const hit=svgNode('rect',{class:'bar-hit-target',x:70+i*step,y:20,width:step,height:250,fill:'transparent','pointer-events':'all','data-bar-time':b.time});
+  bindChartHint(hit,chartDescription(b,stream,matched));chart.append(hit);
+  if(matched.length){const mark=svgNode('circle',{class:'pa-event-marker',cx:x,cy:12,r:Math.max(1,Math.min(6,step*.4)),fill:'#e9bb67',stroke:'#0d121c','data-observed-at':b.time});bindChartHint(mark,chartDescription(b,stream,matched));markers.push(mark)}
   if(focusEvent&&Date.parse(b.time)===Date.parse(focusEvent.observed_at))chart.append(svgNode('line',{x1:x,x2:x,y1:20,y2:275,stroke:'#e9bb67','stroke-dasharray':'3 3'}));
  }
+ for(const marker of markers)chart.append(marker);
  for(const [v,pos] of [[hi,25],[lo,285]]){const text=svgNode('text',{x:5,y:pos,fill:'#9fadc2','font-size':12});text.textContent=v.toFixed(4);chart.append(text)}
- $('range').textContent=bars[0].time+' → '+bars[bars.length-1].time+'；绿色收涨/红色收跌，影线为最高最低；时间为收盘时间。';
+ $('range').textContent=bars[0].time+' → '+bars[bars.length-1].time+'；绿色收涨/红色收跌；金点为当前列表可见的 PA 观察/确认（可知时刻），不是买卖点。';
 }
 function renderNativeContext(stream){
  const context=stream?.native_interpretation;
@@ -99,7 +131,7 @@ function render(){
  renderNativeContext(stream);
  renderNative(stream);
  const bars=(stream?.bars||[]).filter(b=>!focusEvent||Date.parse(b.time)<=Date.parse(focusEvent.observed_at));
- renderChart(bars);
+
  $('focus-info').textContent=focusEvent?'已定位可知时刻 '+focusEvent.observed_at+'；后续K线与事件已隐藏。摆动锚点的发生时刻不等于当时已确认。':'显示当前快照；点击事件可隐藏其后的K线。';
  const body=$('events');body.replaceChildren();
  const basicFamilies=new Set(['doji','trend_bar','gap_open','body_gap','micro_gap','micro_channel']);
@@ -110,6 +142,7 @@ function render(){
  let rows;
  if(grouped){rows=display.groups.map(g=>({...g,events:(g.events||[]).filter(keep)})).filter(g=>g.events.length)}
  else {rows=events.filter(e=>keep(e)&&($('event-mode').value==='raw'||$('show-basic').checked||!basicFamilies.has(e.family)||$('family-filter').value===e.family)).map(e=>({observed_at:e.observed_at,events:[e]}))}
+ renderChart(bars,stream,rows.flatMap(row=>row.events));
  $('event-count').textContent=grouped?rows.length+' 个重点时间组（同bar聚合；原始事件可切换查看）':rows.length+' / '+events.length+' 条快照原始事件（时间 / 形态 / 状态筛选仅影响显示）';
  for(const group of [...rows].reverse()){
   const tr=node('tr');if(focusEvent&&Date.parse(focusEvent.observed_at)===Date.parse(group.observed_at))tr.setAttribute('class','focus-row');

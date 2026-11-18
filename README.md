@@ -177,3 +177,16 @@ primary grouped interpretation even at minimum priority. Current context is
 generated at snapshot read time, not attached retroactively to old events. Historical
 focus explicitly shows no recorded native interpretation rather than using later
 receipts. Use a new v0.7 journal; no existing database is silently rewritten.
+
+### Reading chart details
+Hover, tap, or Tab-focus a candle to read its exact stored OHLC, period and
+UTC/New York timestamp. Gold markers expose the currently visible event list's
+existing PA pattern, status, explanation and quality. They mark **observed_at**,
+not an earlier pivot anchor or a new buy/sell decision. List filters and historical
+focus also constrain markers. Daily tooltips distinguish the session date from
+the conservative next-UTC-midnight availability timestamp. Enter/Space reads the
+focused item; Escape dismisses its hint. No backend or indicator rules are changed.
+
+### Live terminal versus Replay Dashboard
+
+Use `poll-robinhood --output tui` for the four-panel **Market / Native Indicators / Price Action / Data Quality** terminal. `--count 2` provides a bounded smoke check; `--output text` retains full readable details and `--output jsonl` preserves machine output. The Replay Dashboard remains a separate historical inspection surface. See [terminal behavior and quality limits](docs/TERMINAL_MONITOR.md).

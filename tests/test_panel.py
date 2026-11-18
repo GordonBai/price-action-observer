@@ -83,6 +83,21 @@ vm.runInContext('snapshot=fixture;render()',ctx);
 function all(el,p){return [ ...(p(el)?[el]:[]), ...el.children.flatMap(x=>all(x,p)) ];}
 function countCandles(){return all(elements.chart,x=>x.attrs.class==='candle-body').length}
 assert.equal(countCandles(),3,'need OHLC candles');
+const hits=all(elements.chart,x=>x.attrs.class==='bar-hit-target');
+assert.equal(hits.length,3,'exact per-bar hit targets');
+hits[0].listeners.mouseenter();assert(elements['chart-tooltip'].textContent.includes('O 10'),'hover OHLC from exact bar');
+assert(elements['chart-tooltip'].textContent.includes('纽约时间'),'explicit time zone');
+assert.equal(hits[0].attrs.tabindex,'0','keyboard access');
+hits[1].listeners.focus();assert(elements['chart-tooltip'].textContent.includes('14:32'),'focus exact timestamp');
+hits[0].listeners.click();assert(elements['chart-tooltip'].textContent.includes('O 10'),'touch/click exact bar');
+hits[0].listeners.keydown({key:'Escape'});assert(elements['chart-tooltip'].textContent.includes('已关闭'),'escape dismiss');
+const markers=all(elements.chart,x=>x.attrs.class==='pa-event-marker');
+assert.equal(markers.length,2,'observed events have markers');
+assert.equal(markers[0].attrs['data-observed-at'],bars[1].time,'marker must not backpaint anchor');
+markers[0].listeners.focus();assert(elements['chart-tooltip'].textContent.includes('inside_bar'),'marker exposes saved pattern');
+assert(elements['chart-tooltip'].textContent.includes('<img src=x>'),'explanation must retain original plain text');
+assert.equal(all(elements['chart-tooltip'],x=>x.tagName==='img').length,0,'tooltip text must not become HTML');
+
 assert(elements['native-context'].textContent.includes('48.55'),'primary summary missing EMA value');
 assert(elements['native-context'].textContent.includes('低于'),'primary summary needs Chinese relation');
 assert(elements['native-context-evidence'].textContent.includes('generated_at'),'provenance must remain expandable');
@@ -98,6 +113,7 @@ assert(elements['focus-info'].textContent.includes('14:32'));
 assert.equal(elements['native-indicators'].children.length,0,'historical focus leaked later native values');
 assert(elements['native-notice'].textContent.includes('历史定位隐藏原生快照'));
 assert(elements['native-context'].textContent.includes('禁止后来快照回填'),'historical native primary context must hide');
+assert(all(elements.chart,x=>x.attrs.class==='pa-event-marker').every(x=>Date.parse(x.attrs['data-observed-at'])<=Date.parse(bars[1].time)),'future marker leaked');
 assert(!elements['native-context-evidence'].textContent.includes('48.55'),'historical focus leaked provenance values');
 assert.equal(all(elements.events,x=>x.tagName==='a').length,1,'reject unsafe source URL');
 assert(elements.context.textContent.includes('事件未保存语境'),'must not backfill latest context');
@@ -116,6 +132,10 @@ elements['clear-focus'].listeners.click();
 elements['event-mode'].value='raw';elements['show-basic'].checked=false;vm.runInContext('render()',ctx);assert.equal(elements.events.children.length,3,'raw mode retains original events');
 ctx.fixture.streams.push({symbol:'U',timeframe:'1',source:'fixture',bars:[],events:[],state:{}});
 elements.streams.value='1';elements.streams.listeners.change();assert.equal(countCandles(),0,'stream must clear old chart');assert.equal(elements.events.children.length,0);
+vm.runInContext("renderChart([{time:'2026-11-18T00:00:00Z',open:10,high:12,low:9,close:11}],{symbol:'SOXL',timeframe:'D'},[])",ctx);
+all(elements.chart,x=>x.attrs.class==='bar-hit-target')[0].listeners.focus();
+assert(elements['chart-tooltip'].textContent.includes('交易日 2026-11-17'),'daily label must not shift to availability day');
+assert(elements['chart-tooltip'].textContent.includes('保守可知时间'),'daily availability distinct');
 (async()=>{
  let resolves=[];ctx.fetch=()=>new Promise(r=>resolves.push(r));
  const first=vm.runInContext('refresh()',ctx),second=vm.runInContext('refresh()',ctx);

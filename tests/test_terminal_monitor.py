@@ -1,0 +1,214 @@
+from datetime import datetime
+import unittest
+
+from pa_lens.terminal_monitor import TerminalMonitor
+
+SRC = "robinhood:minute:regular:split"
+T10 = "2026-11-18T15:10:00Z"
+T11 = "2026-11-18T15:11:00Z"
+T12 = "2026-11-18T15:12:00Z"
+
+
+def dt(time):
+    return datetime.fromisoformat(time.replace("Z", "+00:00"))
+
+
+def event(id_, when, family="double_bottom"):
+    return dict(id=id_, observed_at=when, family=family, status="confirmed",
+                direction="bull", explanation="Structure closed above neckline.")
+
+
+def stream(close, *, events=(), symbol="SOXL", freshness="RECENT", quarantined=0,
+           quality=None, native=None, source=SRC):
+    return {
+        "symbol": symbol, "timeframe": "1", "source": source, "last_bar_close": close,
+        "age_seconds": 5, "freshness": freshness, "readiness": "READY_FOR_RESEARCH",
+        "bars": [{"time": close, "open": 10, "high": 12, "low": 9, "close": 11, "volume": 100}],
+        "state": {"context": "trend_up"},
+        "data_quality": {"status": "DATA_REVIEW_REQUIRED" if quarantined else quality,
+                         "quarantined_count": quarantined},
+        "display": {"groups": [{"events": list(events)}]},
+        "native_interpretation": native or {"status": "UNAVAILABLE", "reason": "No matching snapshot"}
+    }
+
+
+class TerminalMonitorTests(unittest.TestCase):
+    def render(self, monitor, streams, now, status="ELIGIBLE_OBSERVATIONS", *, fixed=False):
+        return monitor.render({"streams": streams}, [(("SOXL",), {"status": status})],
+                              now=dt(now), source=SRC, fixed_end=fixed)
+
+    def test_first_snapshot_is_baseline_then_new_id_once(self):
+        monitor = TerminalMonitor(["SOXL"])
+        bootstrap = self.render(monitor, [stream(T10, events=[event("old-id", T10)])], T10)
+        self.assertIn("BASELINE", bootstrap)
+        self.assertIn("O=10 H=12 L=9 C=11 V=100", bootstrap)
+        self.assertIn(T10, bootstrap)
+        self.assertNotIn("old-id", bootstrap)
+        new = event("new-id", T11)
+        second = self.render(monitor, [stream(T11, events=[event("old-id", T10), new, new])], T11)
+        self.assertEqual(second.count("new-id"), 1)
+        self.assertIn("double_bottom", second)
+        self.assertIn("Structure closed above neckline", second)
+        self.assertNotIn("old-id", second)
+        again = self.render(monitor, [stream(T12, events=[dict(new, observed_at=T12)])], T12)
+        self.assertNotIn("new-id", again)
+        self.assertIn("No new key PA event", again)
+
+    def test_stale_fixed_end_and_quarantine_not_promoted(self):
+        monitor = TerminalMonitor(["SOXL"])
+        self.render(monitor, [stream(T10)], T10)
+        stale = self.render(monitor, [stream(T11, events=[event("stale-id", T11)],
+                                             freshness="STALE")], "2026-11-18T15:20:00Z")
+        self.assertIn("STALE", stale)
+        self.assertNotIn("stale-id", stale)
+        quarantined = self.render(monitor, [stream(T12, events=[event("q-id", T12)],
+                                                   quarantined=2)], T12)
+        self.assertIn("QUARANTINE", quarantined)
+        self.assertIn("first-received", quarantined)
+        self.assertNotIn("q-id", quarantined)
+        T13 = "2026-11-18T15:13:00Z"
+        fixed = self.render(monitor, [stream(T13, events=[event("fix-id", T13)])], T13, fixed=True)
+        self.assertIn("FIXED END", fixed)
+        self.assertNotIn("fix-id", fixed)
+
+    def test_no_data_then_baseline_and_unknown_native_is_explicit(self):
+        monitor = TerminalMonitor(["SOXL"])
+        empty = self.render(monitor, [], T10, "NO_USABLE_BARS")
+        self.assertIn("No accepted closed bar", empty)
+        native = {"status": "PARTIAL_NATIVE_CONTEXT", "ema20": {"status": "AVAILABLE_SOURCE_UNKNOWN",
+                   "value": "10.5", "relation": "above", "effective_at": T11},
+                  "rsi14": {"status": "UNAVAILABLE", "reason": "native snapshot is stale"}}
+        baseline = self.render(monitor, [stream(T11, quality="DATA_QUALITY_UNKNOWN", native=native)], T11,
+                               "DATA_QUALITY_UNKNOWN")
+        for label in ("BASELINE", "DATA_QUALITY_UNKNOWN", "EMA20", "10.5", "above", "native snapshot is stale",
+                      "warmup/source quality unknown", "trend_up"):
+            self.assertIn(label, baseline)
+
+    def test_recent_bar_does_not_promote_older_catchup_event(self):
+        monitor = TerminalMonitor(["SOXL"])
+        self.render(monitor, [stream(T10)], T10)
+        later = "2026-11-18T15:20:00Z"
+        text = self.render(monitor, [stream(later, events=[event("historical", T11), event("current", later)])], later)
+        self.assertNotIn("historical", text)
+        self.assertIn("id=current", text)
+
+    def test_multiple_symbols_keep_per_cycle_acquisition_status(self):
+        monitor = TerminalMonitor(["SOXL", "SPY"])
+        rows = [stream(T10), stream(T10, symbol="SPY")]
+        text = monitor.render({"streams": rows},
+            [(("SOXL", "SPY"), {"status": "PARTIAL_DATA", "quality": {"no_usable_symbols": ["SPY"]}})],
+            now=dt(T10), source=SRC, native_enabled=False)
+        self.assertIn("SOXL | acquisition=PARTIAL_DATA", text)
+        self.assertIn("SPY | acquisition=NO_USABLE_BARS", text)
+        self.assertIn("not confirmed by this poll", text)
+        self.assertIn("NOT REQUESTED", text)
+
+    def test_cli_text_and_machine_formats(self):
+        from contextlib import redirect_stdout
+        from datetime import timedelta, timezone
+        from io import StringIO
+        import json
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from unittest.mock import patch
+
+        from pa_lens.__main__ import main
+
+        observed = datetime.now(timezone.utc).replace(second=0, microsecond=0) - timedelta(minutes=1)
+        def acquire(_provider, journal, symbols, _start, _end, **_kwargs):
+            journal.ingest_observation(dict(symbol=symbols[0], timeframe="1", source=SRC,
+                time=observed.isoformat(), open=10, high=12, low=9, close=11, volume=100))
+            return {"status": "ELIGIBLE_OBSERVATIONS"}
+
+        with TemporaryDirectory() as tmp:
+            for format_ in ("text", "jsonl", None):
+                out = StringIO()
+                argv = ["pa_lens", "poll-robinhood", "--no-native-context", "--once",
+                        "--db", str(Path(tmp) / f"{format_}.db")]
+                if format_:
+                    argv += ["--output", format_]
+                with patch("sys.argv", argv), patch("pa_lens.robinhood.open_robinhood"), \
+                     patch("pa_lens.rh_runtime.acquire", side_effect=acquire), redirect_stdout(out):
+                    main()
+                if format_ == "text":
+                    self.assertIn("Latest journaled 1m closed bar", out.getvalue())
+                    self.assertIn("history loaded", out.getvalue())
+                else:
+                    records = [json.loads(line) for line in out.getvalue().splitlines()]
+                    self.assertEqual(records[0]["status"], "ELIGIBLE_OBSERVATIONS")
+                    self.assertIn("native_pa_context", records[1])
+
+    def test_tui_layout_fits_80_and_120_columns_and_keeps_quality_visible(self):
+        from pa_lens.terminal_monitor import format_tui, visible_width
+        old = event("archive-id", T10)
+        monitor = TerminalMonitor(["SOXL"])
+        def view():
+            return monitor.view({"streams": [stream(T10, events=[old], freshness="STALE",
+                                                   quality="DATA_QUALITY_UNKNOWN")]},
+                                [(("SOXL",), {"status": "DATA_QUALITY_UNKNOWN"})],
+                                now=dt(T11), source=SRC)
+        for width, height in ((80, 24), (120, 33), (52, 28)):
+            frame = format_tui(view(), width=width, height=height)
+            for heading in ("MARKET", "NATIVE INDICATORS", "PRICE ACTION", "DATA QUALITY"):
+                self.assertIn(heading, frame)
+            self.assertIn("STALE", frame)
+            self.assertIn("DATA_QUALITY_UNKNOWN", frame)
+            self.assertIn("HISTORY", frame)
+            self.assertNotIn("NEW PA", frame)
+            self.assertLessEqual(len(frame.splitlines()), height)
+            self.assertTrue(all(visible_width(line) <= width for line in frame.splitlines()))
+
+    def test_explicit_tui_without_terminal_falls_back_to_plain_text(self):
+        from unittest.mock import patch
+        from io import StringIO
+        from pa_lens.terminal_monitor import terminal_output
+        stream_ = StringIO()
+        self.assertEqual(terminal_output("tui", stream_), "text")
+        with patch.object(stream_, "isatty", return_value=True), patch.dict(
+                "os.environ", {"TERM": "xterm-256color"}):
+            self.assertEqual(terminal_output("tui", stream_), "tui")
+        with patch.object(stream_, "isatty", return_value=True), patch.dict(
+                "os.environ", {"TERM": "dumb"}):
+            self.assertEqual(terminal_output("tui", stream_), "text")
+
+    def test_tui_history_and_new_both_show_engine_judgment_under_separate_labels(self):
+        from pa_lens.terminal_monitor import format_tui
+
+        monitor = TerminalMonitor(["SOXL"])
+        old = event("prior", T10)
+        receipts = [(("SOXL",), {"status": "ELIGIBLE_OBSERVATIONS"})]
+        baseline = monitor.view({"streams": [stream(T10, events=[old])]}, receipts,
+                                now=dt(T10), source=SRC)
+        history = format_tui(baseline, width=80, height=24)
+        self.assertIn("HISTORY", history)
+        self.assertIn("not new", history)
+        self.assertIn("Structure closed above neckline.", history)
+        self.assertIn("Structure closed above neckline.", baseline["text"])
+        self.assertNotIn("NEW PA", history)
+
+        new = dict(event("fresh", T11), explanation="Confirmed on the closing bar.")
+        next_view = monitor.view({"streams": [stream(T11, events=[old, new])]}, receipts,
+                                 now=dt(T11), source=SRC)
+        live = format_tui(next_view, width=80, height=24)
+        self.assertIn("NEW PA", live)
+        self.assertIn("Confirmed on the closing bar.", live)
+        self.assertNotIn("HISTORY", live)
+
+    def test_tui_top_risk_never_hidden_by_other_symbols_or_small_viewport(self):
+        from pa_lens.terminal_monitor import format_tui
+
+        monitor = TerminalMonitor(["SOXL", "SPY", "QQQ", "IWM"])
+        snapshot = {"streams": [stream(T10), stream(T10, symbol="SPY", quarantined=2),
+            stream(T10, symbol="QQQ", freshness="STALE", quality="DATA_QUALITY_UNKNOWN")],
+            "transport": [{"symbol": "IWM", "source": SRC, "status": "error"}]}
+        receipts = [(("SOXL", "SPY", "QQQ"), {"status": "ELIGIBLE_OBSERVATIONS"})]
+        view = monitor.view(snapshot, receipts, now=dt(T10), source=SRC)
+        for width, height in ((80, 17), (80, 24), (42, 8)):
+            frame = format_tui(view, width=width, height=height)
+            header = "\n".join(frame.splitlines()[:6])
+            for label in ("QUARANTINE 1", "UNKNOWN 1", "STALE 1", "ERROR 1"):
+                self.assertIn(label, header)
+            if height >= 17:
+                self.assertIn("omitted", frame)
+            else:
+                self.assertIn("Enlarge", frame)
