@@ -212,3 +212,68 @@ class TerminalMonitorTests(unittest.TestCase):
                 self.assertIn("omitted", frame)
             else:
                 self.assertIn("Enlarge", frame)
+
+    def test_clock_frame_separates_wall_pull_receipt_and_ages_cached_bar(self):
+        from pa_lens.terminal_monitor import clock_frame, format_tui
+        monitor = TerminalMonitor(["SOXL"])
+        native = {"status": "AVAILABLE_SOURCE_UNKNOWN",
+                  "ema20": {"status": "AVAILABLE_SOURCE_UNKNOWN", "value": "123.456",
+                            "effective_at": T10}}
+        snapshot = {"streams": [stream(T10, native=native)], "acquisitions": [{
+            "id": 7, "source": SRC, "received_at": "2026-11-18T15:10:06Z"}]}
+        view = monitor.view(snapshot, [(("SOXL",), {"status": "ELIGIBLE_OBSERVATIONS",
+            "acquisition_id": 7})], now=dt(T10), source=SRC)
+        wall = dt("2026-11-18T15:12:01Z")
+        live = clock_frame(view, wall, "PULLING", dt(T12))
+        text = format_tui(live, width=120, height=28)
+        for label in ("UTC NOW 2026-11-18 15:12:01", "Pull start 15:12:00",
+                      "Receipt 15:10:06", "Snapshot 121s old", "STALE", T10,
+                      "NY 10:12:01 EST", "EMA20  STALE", SRC):
+            self.assertIn(label, text)
+        self.assertNotIn("READY_FOR_RESEARCH", text)
+        self.assertNotIn("123.456", text)
+        self.assertNotIn("STALE", format_tui(view, width=120, height=28))
+
+    def test_clock_renderer_ticks_during_blocked_main_and_leaves_final_frame(self):
+        from datetime import timedelta
+        from io import StringIO
+        from itertools import count
+        from queue import Queue
+        from types import SimpleNamespace
+        from pa_lens.terminal_monitor import TuiClock
+
+        class Output(StringIO):
+            def write(self, value):
+                result = super().write(value)
+                if value.startswith("\x1b"):
+                    updates.put(value)
+                return result
+
+        updates = Queue()
+        calls = (dt(T10) + timedelta(seconds=second) for second in count())
+        out = Output()
+        clock = TuiClock(out, source=SRC, symbols=["SOXL"], clock=lambda: next(calls),
+                         size=lambda: SimpleNamespace(columns=120, lines=28),
+                         tick_seconds=0.01, color=False)
+        clock.start()
+        before = updates.get(timeout=2)
+        following = updates.get(timeout=2)
+        self.assertIn("CONNECTING", before)
+        self.assertNotEqual(before, following)
+        monitor = TerminalMonitor(["SOXL"])
+        view = monitor.view({"streams": [stream(T10)]}, [], now=dt(T10), source=SRC)
+        clock.publish(view)
+        clock.status("PULLING", pull_started=dt(T11))
+        in_flight = []
+        for _ in range(8):
+            candidate = updates.get(timeout=2)
+            if "PULLING" in candidate and T10 in candidate:
+                in_flight.append(candidate)
+            if len(in_flight) == 2:
+                break
+        clock.close()
+        self.assertEqual(len(in_flight), 2)
+        self.assertNotEqual(*in_flight)
+        self.assertFalse(clock.running)
+        self.assertIn("SOXL", out.getvalue().split("\x1b[2J")[-1])
+        self.assertIn("Snapshot", out.getvalue().split("\x1b[2J")[-1])

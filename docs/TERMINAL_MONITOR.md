@@ -13,7 +13,11 @@ python -m pa_lens poll-robinhood --symbols SOXL \
 Use `--count 2` for a short check, `--once` for one snapshot, or Ctrl-C to
 stop continuous polling. The TUI has panels for **Market**, **Native
 Indicators**, **Price Action**, and **Data Quality**. It redraws at the current
-terminal size each poll, using a compact stack on narrower terminals. History
+terminal size every second, using a compact stack on narrower terminals. The
+UTC and New York clocks keep moving during Robinhood requests and between polls.
+Pull start, last recorded acquisition receipt, last completed snapshot age, and
+bar close are distinct. Aging a snapshot can mark the last bar and matching
+native values stale, but it never creates or recomputes observations. History
 shown in the Price Action panel is labeled as not new this scan. Terminals
 with insufficient visible rows can be enlarged; `--output text` gives full
 details without truncation. `NO_COLOR` disables color. An explicit TUI request
@@ -47,3 +51,28 @@ fallback is used. Missing interpolation provenance is shown as
 `DATA_QUALITY_UNKNOWN`; opt-in exploratory events are marked accordingly.
 Quarantined revisions leave the first-received state unchanged and pause new
 announcements until independently reviewed.
+
+## Structured interactive setup
+
+Run `python -m pa_lens wizard`, or on macOS open `Start-Monitor.command` in this
+checkout. The launcher uses this checkout's `.venv`, an adjacent existing infra
+venv, or `python3`; `PA_OBSERVER_PYTHON` may select an existing interpreter. It
+never installs packages or reads credentials. Install the normal project
+requirements first and retain the already-authenticated Robinhood infra.
+
+The wizard asks for ticker(s), interval, session bounds, fixed polling versus
+close-aligned scheduling, seconds/settle delay, finite rounds or `infinite`,
+explicit UNKNOWN exploration, lookback, infra path and a new journal file.
+Defaults: NVDA,5m,regular,fixed30 seconds,10 rounds,strict data quality.
+Enter `y` at UNKNOWN to opt into exploratory data; it still stays UNKNOWN and
+not ready. Daily/derived15m force regular session. Daily bootstrap180 days and
+7-day overlap remain unchanged; derived15m has no native15m indicator fallback.
+At the final preview, only explicit `yes`/`y` starts `poll-robinhood --output tui`.
+
+Each field is validated and re-prompted; there is no natural-language command
+execution, trading, credential prompt or shell evaluation of typed values.
+The wizard uses a new filename rather than overwriting/reusing a journal. To
+resume an existing compatible journal, use the direct CLI deliberately.
+`q`, EOF or Ctrl-C cancels setup without a provider call. Ctrl-C stops a running
+monitor. A non-TTY input/output fails immediately with a CLI alternative; use
+`poll-robinhood --count N --output jsonl` for scripts and pipes.

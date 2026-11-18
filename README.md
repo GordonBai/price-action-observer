@@ -190,3 +190,11 @@ focused item; Escape dismisses its hint. No backend or indicator rules are chang
 ### Live terminal versus Replay Dashboard
 
 Use `poll-robinhood --output tui` for the four-panel **Market / Native Indicators / Price Action / Data Quality** terminal. `--count 2` provides a bounded smoke check; `--output text` retains full readable details and `--output jsonl` preserves machine output. The Replay Dashboard remains a separate historical inspection surface. See [terminal behavior and quality limits](docs/TERMINAL_MONITOR.md).
+
+### Guided terminal setup
+Run `python -m pa_lens wizard` (or double-click `Start-Monitor.command` on macOS).
+Choose symbols, period, session, frequency, finite/unlimited duration and data
+quality in structured prompts; review the generated read-only command before
+starting. Default is NVDA/5m,30 seconds,10 rounds,strict quality. UNKNOWN requires
+explicit opt-in. Cancel with `q`, EOF or Ctrl-C. No passwords or orders; non-TTY
+scripts should use the direct CLI. See [terminal setup](docs/TERMINAL_MONITOR.md).

@@ -1,12 +1,18 @@
 """Human projection of current read-only polling, not another signal engine."""
 from collections import deque
+from copy import deepcopy
+from datetime import datetime, timezone
 import os
 import re
+import shutil
+import threading
 import unicodedata
+from zoneinfo import ZoneInfo
 
 from .core import parse_time
 
 _SEEN_LIMIT = 4096
+_NEW_YORK = ZoneInfo("America/New_York")
 
 
 def _utc(value):
@@ -70,6 +76,10 @@ class TerminalMonitor:
         transport_errors = {entry["symbol"] for entry in snapshot.get("transport", ())
                             if entry["source"] == source and entry.get("status") == "error"}
         risk = dict.fromkeys(("QUARANTINE", "ERROR", "UNKNOWN", "STALE"), 0)
+        receipt_ids = {result.get("acquisition_id") for _, result in receipts} - {None}
+        recorded_receipts = [parse_time(item["received_at"]) for item in snapshot.get("acquisitions", ())
+                             if item["id"] in receipt_ids and item["source"] == source]
+        clock_slots = []
         for symbol in self.symbols:
             stream = streams.get(symbol)
             result = acquisitions.get(symbol, {})
@@ -111,6 +121,7 @@ class TerminalMonitor:
             lines.append(f"  Latest journaled {_period(stream['timeframe'])} closed bar {_utc(close)} "
                          f"| O={last['open']} H={last['high']} L={last['low']} C={last['close']} V={last['volume']}")
             status = f"  {freshness} | age={stream['age_seconds']:.0f}s | {stream['readiness']}"
+            market_row = len(panels["MARKET"]) + 1
             panels["MARKET"].extend((f"{symbol}  {_period(stream['timeframe'])} CLOSED",
                                      f"{_utc(close)}  |  {freshness}",
                                      f"O {last['open']}   H {last['high']}",
@@ -118,11 +129,15 @@ class TerminalMonitor:
             if flags:
                 status += " | " + " / ".join(dict.fromkeys(flags))
             lines.append(status)
+            quality_row = len(panels["DATA QUALITY"])
             panels["DATA QUALITY"].extend((f"{symbol}  {freshness} | age {stream['age_seconds']:.0f}s",
                                            *dict.fromkeys(flags or [acquisition])))
             if flags and acquisition not in flags:
                 panels["DATA QUALITY"].append(f"Acquisition: {acquisition}")
+            readiness_row = None
             if stream["readiness"] not in (*flags, freshness, acquisition):
+                if stream["readiness"] in ("READY_FOR_RESEARCH", "WARMUP"):
+                    readiness_row = len(panels["DATA QUALITY"])
                 panels["DATA QUALITY"].append(stream["readiness"])
             if counts:
                 lines.append(f"  QUARANTINE: {counts} known revision/late arrival record(s); "
@@ -138,13 +153,17 @@ class TerminalMonitor:
             lines.append(f"  PA context: {context} (first-received bars; not a trade signal)")
             panels["PRICE ACTION"].append(f"{symbol}  {context}")
             native = stream.get("native_interpretation", {})
+            native_rows = []
+            native_header = None
             if native_enabled:
                 lines.extend(_native_lines(native))
                 panels["NATIVE INDICATORS"].append(f"{symbol}  {native.get('status', 'UNAVAILABLE')}")
+                native_header = len(panels["NATIVE INDICATORS"]) - 1
                 for key, name in (("ema20", "EMA20"), ("rsi14", "RSI14")):
                     entry = native.get(key, {})
                     if entry.get("status") == "AVAILABLE_SOURCE_UNKNOWN":
                         relation = f" | close {entry['relation']}" if entry.get("relation") else ""
+                        native_rows.append((len(panels["NATIVE INDICATORS"]), name))
                         panels["NATIVE INDICATORS"].append(f"{name} {entry.get('value')}{relation}")
                     else:
                         panels["NATIVE INDICATORS"].append(f"{name}  {entry.get('status', 'UNAVAILABLE')}")
@@ -156,6 +175,11 @@ class TerminalMonitor:
             else:
                 lines.append("  Native context: NOT REQUESTED; no local fallback.")
                 panels["NATIVE INDICATORS"].append(f"{symbol}  NOT REQUESTED | no fallback")
+
+            seconds = int(stream["timeframe"]) * 60 if stream["timeframe"].isdigit() else 86400
+            clock_slots.append((symbol, close, max(120, 2 * seconds), market_row,
+                                quality_row, readiness_row if not counts else None,
+                                native_header, tuple(native_rows)))
 
             def history():
                 groups = stream["display"]["groups"]
@@ -174,7 +198,6 @@ class TerminalMonitor:
                 panels["PRICE ACTION"].append("BASELINE · no new announcements")
                 history()
                 continue
-            seconds = int(stream["timeframe"]) * 60 if stream["timeframe"].isdigit() else 86400
             max_age = max(120, 2 * seconds)
             current = []
             held = 0
@@ -218,7 +241,8 @@ class TerminalMonitor:
                 history()
         return {"text": "\n".join(lines), "panels": panels, "round": self.round,
                 "timestamp": _utc(now), "source": source, "fixed_end": fixed_end,
-                "risk": risk, "symbol_count": len(self.symbols)}
+                "risk": risk, "symbol_count": len(self.symbols), "clock_slots": tuple(clock_slots),
+                "receipt": max(recorded_receipts, default=None)}
 
 
 def terminal_output(requested, stream):
@@ -305,7 +329,9 @@ def format_tui(view, *, width, height, color=False):
         risk = "RISK " + " ".join(f"{short[label]}{count}" for label, count in risk_tags)
     usable = max(1, min(160, width - 1))
     risk_rows = list(_wrap(risk, usable))
-    compact = [*risk_rows, _take("Enlarge terminal for 4 panels", usable)[0]]
+    clock_rows = view.get("clock_rows", ())
+    compact = [*risk_rows, *(line for row in clock_rows for line in _wrap(row, usable)),
+               _take("Enlarge terminal for 4 panels", usable)[0]]
     if width < 25 or height < (23 if width < 71 else 17):
         return "\n".join(compact[:max(1, height)])
     # Leave a spare column and row so terminals cannot auto-wrap/scroll the canvas.
@@ -313,8 +339,11 @@ def format_tui(view, *, width, height, color=False):
     header = f"PA OBSERVER  /  LIVE MONITOR   •   POLL {view['round']}"
     kind = "FIXED END" if view["fixed_end"] else "READ-ONLY"
     subtitle = f"{view['timestamp']}   {kind}   {view['source']}"
+    if clock_rows:
+        subtitle = f"{clock_rows[0]}   {kind}"
     lines = [paint(_take(header, width)[0], "1;36"), *list(_wrap(subtitle, width))[:2],
-             *(paint(line, "1;33" if risk_tags else "2") for line in risk_rows)]
+             *(paint(line, "1;33" if risk_tags else "2") for line in risk_rows),
+             *(line for row in clock_rows[1:] for line in _wrap(row, width))]
     names = list(view["panels"])
     accents = ("1;36", "1;35", "1;32", "1;33")
     remaining = height - len(lines) - 1
@@ -333,5 +362,126 @@ def format_tui(view, *, width, height, color=False):
         for index, idx in enumerate((0, 3, 2, 1)):
             count = remaining // 4 + int(index < remaining % 4)
             lines.extend(_panel(names[idx], view["panels"][names[idx]], width, count, accents[idx], color=color))
-    lines.append(_take("Closed bars only   ·   Research only   ·   Ctrl-C stops   ·   text mode for full details", width)[0])
+    footer = (f"{view['source']} · Ctrl-C stops" if clock_rows else
+              "Closed bars only · Research only · Ctrl-C stops · text mode for full details")
+    lines.append(_take(footer, width)[0])
     return "\n".join(lines)
+
+
+def clock_frame(view, now, phase, pull_started):
+    """Age the copied display only. No new bars, events, or provider deductions."""
+    view = deepcopy(view)
+    now = parse_time(now)
+    walls = view["panels"]
+    stale = 0
+    for (symbol, close, limit, market_row, quality_row, readiness_row,
+         native_header, native_rows) in view["clock_slots"]:
+        age = (now - close).total_seconds()
+        freshness = "FUTURE" if age < -5 else "STALE" if age > limit else "RECENT"
+        stale += int(freshness != "RECENT")
+        walls["MARKET"][market_row] = f"{_utc(close)}  |  {freshness}"
+        walls["DATA QUALITY"][quality_row] = f"{symbol}  {freshness} | age {age:.0f}s"
+        if freshness != "RECENT" and readiness_row is not None:
+            walls["DATA QUALITY"][readiness_row] = "Snapshot no longer current"
+        if freshness != "RECENT" and native_rows:
+            walls["NATIVE INDICATORS"][native_header] = f"{symbol}  {freshness} SNAPSHOT"
+            for index, name in native_rows:
+                walls["NATIVE INDICATORS"][index] = f"{name}  {freshness} (last pull)"
+    view["risk"]["STALE"] = stale
+    # Observation state never advances on a timer. Explicitly date the retained
+    # PA and native snapshot and distinguish it from the currently running pull.
+    timestamp = view.get("timestamp")
+    age = (f"{max(0, int((now - parse_time(timestamp)).total_seconds()))}s old"
+           if timestamp else "pending")
+
+    def short(value):
+        return parse_time(value).strftime("%H:%M:%S") if value else "—"
+
+    ny = now.astimezone(_NEW_YORK)
+    ny_label = ny.strftime("%m-%d %H:%M:%S %Z" if ny.date() != now.date() else "%H:%M:%S %Z")
+    view["clock_rows"] = (
+        f"UTC NOW {now:%Y-%m-%d %H:%M:%S}  |  NY {ny_label}  |  {phase}",
+        f"Pull start {short(pull_started)} · Receipt {short(view.get('receipt'))} · Snapshot {age}",
+    )
+    return view
+
+
+class TuiClock:
+    """Own terminal redraws using only a detached main-thread snapshot."""
+
+    def __init__(self, stream, *, source, symbols, fixed_end=False, clock=None,
+                 size=None, tick_seconds=1, color=None):
+        self._stream = stream
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+        self._size = size or self._terminal_size
+        self._tick = tick_seconds
+        self._color = "NO_COLOR" not in os.environ if color is None else color
+        self._condition = threading.Condition()
+        self._phase = "CONNECTING"
+        self._pull_started = None
+        self._dirty = True
+        self._closing = False
+        waiting = [f"{symbol}  Awaiting first completed pull" for symbol in symbols]
+        self._view = {"round": 0, "timestamp": None, "source": source, "fixed_end": fixed_end,
+                      "panels": {name: waiting for name in (
+                          "MARKET", "NATIVE INDICATORS", "PRICE ACTION", "DATA QUALITY")},
+                      "risk": dict.fromkeys(("QUARANTINE", "ERROR", "UNKNOWN", "STALE"), 0),
+                      "clock_slots": (), "receipt": None}
+        self._thread = threading.Thread(target=self._draw_loop, name="pa-tui-clock", daemon=True)
+
+    @property
+    def running(self):
+        return self._thread.is_alive()
+
+    def _terminal_size(self):
+        try:
+            return os.get_terminal_size(self._stream.fileno())
+        except (AttributeError, OSError, ValueError):
+            return shutil.get_terminal_size(fallback=(80, 24))
+
+    def start(self):
+        self._thread.start()
+
+    def status(self, phase, *, pull_started=None):
+        self._enqueue(phase, pull_started=pull_started)
+
+    def publish(self, view):
+        self._enqueue("WAITING", view=deepcopy(view))
+
+    def _enqueue(self, phase, *, pull_started=None, view=None):
+        with self._condition:
+            if self._closing:
+                return
+            self._phase = phase
+            if pull_started is not None:
+                self._pull_started = pull_started
+            if view is not None:
+                self._view = view
+            self._dirty = True
+            self._condition.notify()
+
+    def close(self):
+        with self._condition:
+            self._closing = True
+            self._condition.notify()
+        if self._thread.ident is not None:
+            self._thread.join()
+
+    def _draw_loop(self):
+        try:
+            while True:
+                with self._condition:
+                    if not self._dirty and not self._closing:
+                        self._condition.wait(self._tick)
+                    if self._closing and not self._dirty:
+                        return
+                    view, phase, started = self._view, self._phase, self._pull_started
+                    self._dirty = False
+                size = self._size()
+                snapshot = clock_frame(view, self._clock(), phase, started)
+                canvas = format_tui(snapshot, width=size.columns, height=size.lines, color=self._color)
+                self._stream.write("\x1b[2J\x1b[H" + canvas)
+                self._stream.flush()
+        except OSError:
+            # Closing or losing the terminal does not change the acquired data.
+            return

@@ -186,3 +186,10 @@ EMA9 不代替 EMA20，5m 原生不冒充15m，派生15m原生语境明确不可
 ### 实时终端与 Replay Dashboard 分开
 
 `poll-robinhood --output tui` 提供行情、原生指标、PA观察、数据质量四区终端；加 `--count 2` 可做有界测试。`--output text` 保留完整可读明细，`--output jsonl` 保留机器接口。Replay Dashboard 专用于历史交互查看，不由终端默认启动。参见[终端用法与质量边界](docs/TERMINAL_MONITOR.md)。
+
+### 交互式启动向导
+运行 `python -m pa_lens wizard`，或在 macOS 双击 `Start-Monitor.command`。
+按结构化提示选择股票、周期、市场时段、轮询频率、有限/无限运行及数据质量，
+查看完整命令后明确确认才启动只读 TUI。默认 NVDA/5m、30秒、10轮、严格质量；
+UNKNOWN 必须显式允许。输入 `q`、EOF 或 Ctrl-C 可取消，不要求密码、不交易。
+管道/脚本使用直接 CLI，不会卡在交互提示。详见 [终端说明](docs/TERMINAL_MONITOR.md)。
