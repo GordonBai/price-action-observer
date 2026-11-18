@@ -73,7 +73,7 @@ class RobinhoodTests(unittest.TestCase):
                            interval="banana")
         with self.assertRaises(ValueError):
             provider.fetch(["SOXL"], "2026-11-01T00:00:00Z", "2026-11-09T00:00:00Z",
-                           interval="day", adjustment_type="all")
+                           interval="5minute", adjustment_type="all")
         with self.assertRaises(ValueError):
             provider._call("place_equity_order", {})
         with self.assertRaises(ValueError):
@@ -160,13 +160,17 @@ class RobinhoodTests(unittest.TestCase):
             RobinhoodProvider(stub, descriptors={"get_equity_historicals": {}}).quotes(["SOXL"])
         self.assertEqual(stub.calls, [])
 
-    def test_daily_raw_only(self):
-        stub = Stub([bar("2026-11-16T05:00:00Z")])
-        result = self.provider(stub).fetch(["SOXL"], "2026-11-16T00:00:00Z",
-                                           "2026-11-17T00:00:00Z", interval="day")
-        self.assertFalse(result.bars)
-        self.assertEqual(len(result.raw_records), 1)
-        self.assertEqual(result.quality["daily_raw_only"], 1)
+    def test_daily_availability_and_labels(self):
+        stub = Stub([bar("2026-11-15T00:00:00Z"), bar("2026-11-16T05:00:00Z"),
+                     bar("2026-11-16T00:00:00Z"), bar("2026-11-17T00:00:00Z")])
+        result = self.provider(stub).fetch(["SOXL"], "2026-11-15T00:00:00Z",
+                                           "2026-11-18T00:00:00Z", interval="day")
+        self.assertEqual(len(result.raw_records),4)
+        self.assertEqual((result.quality["invalid"],result.quality["incomplete"]), (2,1))
+        self.assertEqual([(b.timeframe,b.time) for b in result.bars],[("D","2026-11-17T00:00:00+00:00")])
+        self.assertEqual(result.bar_provenance[0]["session_date"],"2026-11-16")
+        with self.assertRaisesRegex(ValueError, "regular"):
+            self.provider(stub).fetch(["SOXL"],"2026-11-15T00:00:00Z","2026-11-18T00:00:00Z",interval="day",bounds="extended")
 
     def test_transport_failure_is_visible_without_raw_text(self):
         with self.assertRaises(RobinhoodError) as caught:

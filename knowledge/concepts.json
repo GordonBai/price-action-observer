@@ -393,7 +393,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
+            "sha256": "849f72e95d6ab3c7405435afd40fcebb44ce6656b29c642b62047f4d25f16930"
           }
         ],
         "limits": "Strict DB/DT and range-breakout events carry context/trigger/stop; not a general Brooks setup model.",
@@ -460,7 +460,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine._context",
-            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
+            "sha256": "849f72e95d6ab3c7405435afd40fcebb44ce6656b29c642b62047f4d25f16930"
           }
         ],
         "limits": "20-bar directional efficiency >0.55 is a coarse heuristic, not the full cycle.",
@@ -538,7 +538,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
+            "sha256": "849f72e95d6ab3c7405435afd40fcebb44ce6656b29c642b62047f4d25f16930"
           }
         ],
         "limits": "Strict delayed-pivot, tolerance/rebound and neckline-close variant only; not all Brooks DB flags/tests.",
@@ -606,7 +606,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
+            "sha256": "849f72e95d6ab3c7405435afd40fcebb44ce6656b29c642b62047f4d25f16930"
           }
         ],
         "limits": "Mirror strict DB heuristic; not full Brooks double-top coverage.",
@@ -680,7 +680,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update; project_equal_leg",
-            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
+            "sha256": "849f72e95d6ab3c7405435afd40fcebb44ce6656b29c642b62047f4d25f16930"
           }
         ],
         "limits": "Range/DB height projections and manual AB=CD helper only; no automatic gap-MM or anchor hierarchy.",
@@ -1262,7 +1262,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Eight-close directional/limited-adverse-move proxy; not all tight channels or cost-aware tradability.",
@@ -1394,7 +1394,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Actual New York open coverage required; first-five-minute directional range and later opposite close. Candidate/invalidation only, not gap-down course variants.",
@@ -1469,7 +1469,7 @@
           {
             "path": "pa_lens/replay.py",
             "symbols": "evaluate",
-            "sha256": "94de4dfa6530ea5c7cc8f333d8308c3a054348b7f1c2a21d0854ab9599b82fff"
+            "sha256": "a8a7798904904e0417473526dfb1be08d6c681342af8d894af9e1ad4136c9bc9"
           }
         ],
         "limits": "Paper trigger/stop/target handling for existing events, not broker execution or all structural stop policies.",
@@ -1596,7 +1596,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Trend-line break, later retest and local reverse close evidence only; all MTR development stages remain candidates, not complete MTR confirmation.",
@@ -1662,7 +1662,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Frozen ten-bar range breakout, failed close back inside, then restored close beyond same boundary; fifteen-bar expiry.",
@@ -2062,7 +2062,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "First two hours with successive intraday-high and intraday-low rejections on separate bars; neutral candidate only.",
@@ -2124,7 +2124,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Microgap held/filled/expired development only; neither held nor filled is a definitive measuring/exhaustion classification.",
@@ -2306,7 +2306,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
+            "sha256": "849f72e95d6ab3c7405435afd40fcebb44ce6656b29c642b62047f4d25f16930"
           },
           {
             "path": "pa_lens/advanced.py",
@@ -2679,7 +2679,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Ten-bar directional proxy followed by five-bar compact consolidation; continuation/failure stages remain candidates; trend maturity and complete variants not established.",
@@ -2742,7 +2742,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Complete RTH-aligned five one-minute bars aggregated to five-minute OHLCV; no incomplete window, higher-timeframe semantic detector or conflict policy.",
@@ -2804,7 +2804,7 @@
           {
             "path": "pa_lens/structures.py",
             "symbols": "StructureDetector.update",
-            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+            "sha256": "00218d44f6b5b4f20bcd582b9ed9dbdc5675a464ab508ed8b670a68cb14987d4"
           }
         ],
         "limits": "Frozen two confirmed-pivot trend line plus break/retest observations; no automatic parallel channel or optimal discretionary line selection.",
@@ -2930,7 +2930,7 @@
           {
             "path": "pa_lens/replay.py",
             "symbols": "evaluate",
-            "sha256": "94de4dfa6530ea5c7cc8f333d8308c3a054348b7f1c2a21d0854ab9599b82fff"
+            "sha256": "a8a7798904904e0417473526dfb1be08d6c681342af8d894af9e1ad4136c9bc9"
           }
         ],
         "limits": "Paper evaluate models conservative trigger/fill scenarios for existing events; no actual order routing, queue or broker-specific trigger model.",

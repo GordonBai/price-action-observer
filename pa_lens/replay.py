@@ -126,6 +126,7 @@ def evaluate(bars, events, cost_bps=3.0, expiry_bars=20):
     if isinstance(expiry_bars,bool) or not isinstance(expiry_bars,int) or expiry_bars < 1:
         raise ValueError('expiry_bars must be a positive integer')
     bars = _validated(bars)
+    if bars and bars[0].timeframe=="D": raise ValueError("legacy policy is intraday only")
     index = {b.time:i for i,b in enumerate(bars)}
     by_bar = defaultdict(list)
     seen = set()
@@ -275,6 +276,7 @@ SPLITS = {
 def evaluate_splits(bars, config=None, cost_grid=(0,1,3,5)):
     """Fixed-date slices, same frozen config, no search/selection or parameter fit."""
     bars=_validated(bars)
+    if bars and bars[0].timeframe=='D': raise ValueError('legacy policy is intraday only')
     result={'splits':{},'config':asdict(config or Config()),
             'method':'fixed chronological partitions; no parameter tuning performed by this function',
             'data_scope':'2026-08-17 through 2026-11-17; known case separate from prior three calendar months'}

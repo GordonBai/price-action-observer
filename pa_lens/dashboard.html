@@ -7,6 +7,7 @@
 <div class="row"><label>本地访问令牌 <input type="password" id="token" autocomplete="off" placeholder="PA_LENS_TOKEN"></label><button id="connect">读取 / 刷新</button><label><input type="checkbox" id="auto">每 5 秒刷新</label><select id="streams" aria-label="行情流"></select></div>
 <div id="error" role="alert"></div><div class="card"><strong id="status">尚未读取数据</strong><p id="notice" class="notice">接收器不是数据源。请先通过已验证的供应商适配器提交真实已收盘行情。历史回放不会被标为已验证实时行情。</p><div id="meta" class="small"></div></div>
 <div class="card"><h2>最近已收盘 OHLC 蜡烛</h2><svg id="chart" viewBox="0 0 1000 300" role="img" aria-label="已收盘OHLC蜡烛图"></svg><div id="range" class="small"></div><p id="focus-info" class="notice">显示当前快照；点击事件可隐藏其后的K线。</p><button id="clear-focus">返回最新快照</button></div>
+<div class="card"><h2>本地计算指标</h2><p class="small">供应商指标未请求；EMA/RSI/ATR 来自本地已接纳 K 线，方法与暖机独立显示，不能当成供应商数值或校准胜率。unknown 行情不升级为已验证。</p><pre id="local-indicators">等待数据</pre></div>
 <div class="card"><h2>当前语境</h2><pre id="context">等待数据</pre></div>
 <div class="card"><h2>事件与解读 <span id="event-window" class="small">快照有限窗口；不是实际订单</span></h2><div class="row"><label>视图 <select id="event-mode"><option value="grouped">重点分组</option><option value="raw">原始事件</option></select></label><label>形态 <select id="family-filter"><option value="">全部</option></select></label><label>状态 <select id="status-filter"><option value="">全部</option></select></label><label id="basic-control"><input type="checkbox" id="show-basic">显示基础K线/缺口特征</label><span id="event-count" class="small"></span></div><details><summary>展示层过滤 / 冷却统计与配置</summary><pre id="display-stats">尚未读取</pre></details><table><thead><tr><th>可知时刻</th><th>形态 / 状态</th><th>证据解读</th></tr></thead><tbody id="events"></tbody></table></div>
 <script>
@@ -43,16 +44,17 @@ function render(){
  if(!snapshot)return;
  const stream=snapshot.streams[Number($('streams').value)||0],state=stream?.state||{};
  $('notice').textContent=snapshot.notice||'研究模式；尚未验证实时报价。';
- $('status').textContent=stream?stream.freshness+' · '+(stream.readiness||'UNKNOWN_READINESS')+' · '+stream.symbol+' / '+stream.timeframe+'m':'WAITING_FOR_DATA';
+ $('status').textContent=stream?stream.freshness+' · '+(stream.readiness||'UNKNOWN_READINESS')+' · '+stream.symbol+' / '+(stream.timeframe==='D'?'日线 D':stream.timeframe+'m'):(snapshot.readiness||'WAITING_FOR_DATA');
  $('meta').textContent=stream?'来源: '+stream.source+' | 累计bar: '+stream.bar_count+' | 最近收盘: '+stream.last_bar_close+' | age: '+stream.age_seconds+'s':'';
  const events=stream?.events||[],display=stream?.display;
  const available=[...events,...(display?.groups||[]).flatMap(g=>g.events||[])];
  if(focusEvent&&!available.some(e=>e.id===focusEvent.id))focusEvent=null;
  $('display-stats').textContent=display?label({说明:'仅展示层降频；未删除原始审计事件。raw_events/displayed_events/displayed_groups及隐藏计数是截至最新快照的累计值；retained_groups仅为保留窗口，原始表也仅近200条，不是完整审计轨迹。统计不是事件时刻的识别准确率。',stats:display.stats,config:display.config,presentation_version:display.presentation_version}):'该快照没有服务端展示分组，暂显示原始事件。';
  updateOptions('family-filter',available.map(e=>e.family));updateOptions('status-filter',available.map(e=>e.status));
- const summary={data_quality:stream?.data_quality??null,transport:(snapshot.transport||[]).filter(t=>t.source===stream?.source&&t.symbol===stream?.symbol&&t.timeframe===stream?.timeframe)};for(const k of ['context','bars_in_segment','gap_count','config_hash','knowledge_version','mode','coverage'])summary[k]=state[k]??null;
+ const summary={data_quality:stream?.data_quality??snapshot.data_quality??null,acquisitions:snapshot.acquisitions||[],transport:(snapshot.transport||[]).filter(t=>t.source===stream?.source&&t.symbol===stream?.symbol&&t.timeframe===stream?.timeframe)};for(const k of ['context','bars_in_segment','gap_count','config_hash','knowledge_version','mode','coverage'])summary[k]=state[k]??null;
  // Snapshot context is not historical state. Hide it when focusing an earlier event.
- $('context').textContent=focusEvent?label({说明:'仅展示该事件当时保存的语境，不使用最新快照推断历史。',context:focusEvent.context??'事件未保存语境',knowledge_version:focusEvent.knowledge_version??null}):stream?label(summary):'等待数据';
+ $('context').textContent=focusEvent?label({说明:'仅展示该事件当时保存的语境，不使用最新快照推断历史。',context:focusEvent.context??'事件未保存语境',knowledge_version:focusEvent.knowledge_version??null}):stream?label(summary):label({data_quality:snapshot.data_quality,acquisitions:snapshot.acquisitions||[]});
+ $('local-indicators').textContent=focusEvent?'历史事件未保存当时指标快照；隐藏最新计算值，避免未来信息。':label(state.local_indicators??'等待数据');
  const bars=(stream?.bars||[]).filter(b=>!focusEvent||Date.parse(b.time)<=Date.parse(focusEvent.observed_at));
  renderChart(bars);
  $('focus-info').textContent=focusEvent?'已定位可知时刻 '+focusEvent.observed_at+'；后续K线与事件已隐藏。摆动锚点的发生时刻不等于当时已确认。':'显示当前快照；点击事件可隐藏其后的K线。';
@@ -76,7 +78,7 @@ function render(){
   if(grouped)explanation.append(node('strong',[event.family,event.status,event.direction].filter(Boolean).join(' / ')));
   explanation.append(node('div',event.explanation||event.evidence));
   if(event.uncertainty)explanation.append(node('p',event.uncertainty));
-  const levels={};for(const key of ['observed_at','confirmed_at','trigger','stop','target','anchors','evidence','rule_version','knowledge_version'])if(event[key]!==undefined&&event[key]!==null)levels[key]=event[key];
+  const levels={};for(const key of ['observed_at','confirmed_at','trigger','stop','target','anchors','evidence','rule_version','knowledge_version','data_quality','data_quality_flags'])if(event[key]!==undefined&&event[key]!==null)levels[key]=event[key];
   showDetails(explanation,'证据 / 锚点 / 观察时间（非订单）',levels);
   for(const ref of event.knowledge_references||[]){
    const d=node('details');d.append(node('summary',ref.title||ref.id),node('p',ref.summary),node('p','反例 / 边界：'+(ref.counterexample||'未提供')));

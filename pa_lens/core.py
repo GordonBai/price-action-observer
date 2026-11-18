@@ -5,12 +5,14 @@ from zoneinfo import ZoneInfo
 import hashlib
 import json
 import math
+from .analytics import LocalIndicators
+from .timeframes import consecutive_daily, daily_session
 from .advanced import AdvancedDetector
 from .observations import ObservationDetector
 from .structures import StructureDetector
 from .explanations import ground_event, KNOWLEDGE_VERSION
 
-ENGINE_VERSION = "0.4.0"
+ENGINE_VERSION = "0.5.0"
 
 
 def parse_time(value):
@@ -40,8 +42,10 @@ class Bar:
                 raise ValueError(f'{name} must be a finite number')
         if self.low <= 0 or self.high < max(self.open,self.low,self.close) or self.low > min(self.open,self.close) or self.volume < 0:
             raise ValueError('invalid OHLCV')
-        if not isinstance(self.timeframe,str) or not self.timeframe.isdigit() or not 1 <= int(self.timeframe) <= 240:
-            raise ValueError('only 1..240 minute timeframes supported')
+        if self.timeframe=='D':
+            daily_session(parse_time(self.time))
+        elif not isinstance(self.timeframe,str) or not self.timeframe.isdigit() or not 1 <= int(self.timeframe) <= 240:
+            raise ValueError('expected D or 1..240 minute timeframe')
         if any(not isinstance(v,str) or not v or len(v)>100 for v in (self.symbol,self.source)):
             raise ValueError('invalid symbol/source')
 
@@ -94,6 +98,7 @@ class Engine:
         self.observations=ObservationDetector(self.config)
         self.structures=StructureDetector(self.config)
         self._detector_parents={}
+        self.local_indicators=LocalIndicators()
 
     def _emit(self,family,status,direction,bar,anchors=None,evidence=None,**values):
         anchors=anchors or {}
@@ -109,6 +114,7 @@ class Engine:
         states={'candidate':'候选，尚未确认突破','confirmed':'结构收盘确认；不预测未来方向',
                 'invalidated':'已失效','expired':'已过期','reached':'目标触及，不代表反转','observed':'已观察'}
         event['explanation']=f"{words.get(family,family)}：{states.get(status,status)}。"+'；'.join(event['evidence'])
+        if bar.source.endswith(':accept_unknown'): event['data_quality']='DATA_QUALITY_UNKNOWN'
         ground_event(event)
         self.events.append(event)
         if len(self.events)>500: del self.events[:-500]
@@ -121,6 +127,7 @@ class Engine:
         self.observations=ObservationDetector(self.config)
         self.structures=StructureDetector(self.config)
         self._detector_parents={}
+        self.local_indicators=LocalIndicators()
 
     def _atr(self):
         bars=self.bars[-15:]
@@ -149,11 +156,15 @@ class Engine:
         self.stream=key
         if self.last:
             old=parse_time(self.last.time);new=parse_time(bar.time)
-            if old.astimezone(ZoneInfo('America/New_York')).date()!=new.astimezone(ZoneInfo('America/New_York')).date():
+            if bar.timeframe=='D':
+                if not consecutive_daily(old,new):
+                    self.gap_count+=1;self._reset();self._emit('data_gap','observed','neutral',bar,evidence=['Missing expected XNYS session; state reset without filling bars.'])
+            elif old.astimezone(ZoneInfo('America/New_York')).date()!=new.astimezone(ZoneInfo('America/New_York')).date():
                 self._reset();self._emit('session_reset','observed','neutral',bar,evidence=['跨交易所本地日期，重置形态；不跨日连线'])
             elif (new-old).total_seconds()!=int(bar.timeframe)*60:
                 self.gap_count+=1;self._reset();self._emit('data_gap','observed','neutral',bar,evidence=['时间间隔不连续，重置形态；未补造价格'])
         self.last=bar;self.total_bars+=1;self.bars.append(bar)
+        self.local_indicators.update(bar)
         i=len(self.bars)-1;c=self.config;atr=self._atr()
         if i:
             prev=self.bars[-2]
@@ -242,6 +253,8 @@ class Engine:
     def snapshot(self):
         return {'schema':'pa-lens/snapshot-v1','stream':self.stream,'last_bar':asdict(self.last) if self.last else None,
                 'bars_in_segment':len(self.bars),'total_bars':self.total_bars,'gap_count':self.gap_count,
+                'local_indicators':{**self.local_indicators.snapshot(),'atr_engine':{'value':self._atr() if self.bars else None,'method':'mean_TR_last_15_first_range_tick_floor_not_Wilder','ready':len(self.bars)>=15}},
+                'data_quality':'DATA_QUALITY_UNKNOWN' if self.last and self.last.source.endswith(':accept_unknown') else 'SOURCE_DEPENDENT',
                 'context':self._context(),'config':asdict(self.config),'config_hash':self.config_hash,
                 'events':self.events[-100:],'recent_bars':[asdict(b) for b in self.bars[-120:]],
                 'probability':None,'mode':'research_only','purpose':'pattern_observation_and_explanation',

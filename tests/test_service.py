@@ -1,4 +1,5 @@
 import json
+from contextlib import closing
 import tempfile
 import shutil
 import subprocess
@@ -61,8 +62,9 @@ class JournalTests(unittest.TestCase):
             self.journal.close()
             with self.assertRaisesRegex(ValueError, 'new database'):
                 Journal(self.path)
-            with sqlite3.connect(str(self.path)) as conn:
-                conn.execute('UPDATE metadata SET value=? WHERE key=?', (original, key))
+            with closing(sqlite3.connect(str(self.path))) as conn:
+                with conn:
+                    conn.execute('UPDATE metadata SET value=? WHERE key=?', (original, key))
             self.journal = Journal(self.path)
 
     def test_legacy_journal_without_code_identity_fails_closed(self):

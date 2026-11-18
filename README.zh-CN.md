@@ -14,7 +14,7 @@
 ## 介绍
 基于 [AI Agent Lens](https://github.com/roan-maverick/tradingview-indicator-for-ai-agents) 的原创 Python 研究扩展：顺序接收已收盘 K 线，识别一部分 Brooks 风格价格行为结构，输出中文证据、失效条件与 measured move 锚点。
 
-**不是完整 Brooks 课程的自动化复刻，不负责下单，也不自带实时行情。** 上游 Pine 和 MIT 版权声明保留，见[原版README](docs/UPSTREAM_README.md)。[资料审计](docs/research/source_audit.md)区分实际读到的正文、仅有目录和未观看视频；[覆盖表](docs/COVERAGE.md)区分已实现、手工辅助及未实现。数值阈值都是工程近似，不是 Brooks 发布的官方算法。
+**Robinhood MCP 主动取数 + 本地 PA 观察系统，不是交易执行器，也不是完整 Brooks 课程的自动化复刻。** 上游 Pine 和 MIT 版权声明保留，见[原版README](docs/UPSTREAM_README.md)。[资料审计](docs/research/source_audit.md)区分实际读到的正文、仅有目录和未观看视频；[覆盖表](docs/COVERAGE.md)区分已实现、手工辅助及未实现。数值阈值都是工程近似，不是 Brooks 发布的官方算法。
 
 ### 观察系统有什么
 - 双底/双顶候选及严格颈线突破确认，摆动点需等待右侧 K 线，不把确认信号画回过去冒充提前预测。
@@ -26,14 +26,36 @@
 - `probability=null`：不把规则强度写成胜率。中文解释不依赖外部 LLM，也不需要 API key。
 
 ## 快速开始
-Python 3.11+，仅用标准库。进入仓库根目录运行：
+Python 3.11+。日线交易日历依赖 `exchange-calendars`，先安装固定版本依赖。进入仓库根目录运行：
 
 ```bash
+python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python -m pa_lens replay examples/pa/synthetic_double_bottom.jsonl --out local_data/demo
 python -m pa_lens mm --a 100 --b 110 --c 105
 ```
 示例是**人工合成数据**，不是 SOXL 或收益证据。回放输出事件流水和 JSON 报告。第三方原始行情不随仓库再分发。
+
+### 主动请求 Robinhood
+需事先安装原 infra，并在 Codex 完成官方 Robinhood 连接授权。把 `RH_INFRA` 设为安装目录；本项目不自行登录，也不读取凭据文件。
+
+```bash
+python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL QQQ \
+  --interval day --start 2026-08-17T00:00:00Z --end 2026-11-18T00:00:00Z \
+  --db local_data/rh-daily-strict.sqlite3
+python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
+  --interval minute --poll-seconds 30 --count 2 --db local_data/rh-minute-strict.sqlite3
+```
+以上默认严格。要探索未知插值数据才显式加 `--accept-unknown`，另用新数据库；输出仍是未知质量而非可靠交易信号。轮询是主动 getter，不是交易所推流。需要同进程面板时，设置本地 `PA_LENS_TOKEN` 后加 `--serve-port 8080`；不能另开 `serve` 和采集器共写同一个日志。
+
+15分钟模式实际请求5分钟原始条，只有同一常规交易时段完整三根才生成一根，不跨日或补造缺桶。按收盘边界轮询可用：
+
+```bash
+python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
+  --interval 15minute --align-close --settle-seconds 10 --count 2 \
+  --accept-unknown --db local_data/rh-15m-exploratory.sqlite3
+```
+这是有限两轮探索，不是daemon部署。初次立即取数，后续按边界加等待时间；供应商没有公开延迟SLA。每个进程一套周期和多只标的；不同周期进程使用不同数据库。
 
 ### 本地接入与面板
 在自己的环境设置至少16字符的随机 `PA_LENS_TOKEN`，再运行：
@@ -48,7 +70,7 @@ curl -X POST http://127.0.0.1:8080/bar \
   -H "Authorization: Bearer $PA_LENS_TOKEN" -H 'Content-Type: application/json' \
   --data '{"symbol":"SOXL","timeframe":"1","time":"2026-11-17T14:31:00Z","open":50.5,"high":50.8,"low":50.1,"close":50.4,"volume":1000,"source":"example"}'
 ```
-这是**历史格式示例**，不是已经订阅实时数据。标准输入 `time` 为收盘时刻。`/webhook` 兼容上游 `ai-agent-lens/v1` 格式，仍要求 Bearer 认证；TradingView 不能直接设置该请求头；现在支持显式启用独立 query-secret 入口，见[接入说明](docs/LIVE_ADAPTER.md)，但未部署公网 HTTPS 中继。不要直接把开发 HTTP 服务暴露到公网。
+这是**历史格式示例**，不是已经订阅实时数据。标准输入 `time` 为收盘时刻。`/webhook` 兼容上游 `ai-agent-lens/v1` 格式，仍要求 Bearer 认证；TradingView 不能直接设置该请求头。旧 query-secret 实验入口不应用于公网，也不是当前数据路径；不要将秘密放进 TradingView URL/消息。未部署公网 HTTPS 中继。不要直接把开发 HTTP 服务暴露到公网。
 
 `/health`、`/snapshot` 也要认证。RECENT 仅代表提交的时间戳接近现在，不等于实时行情质量已验证。服务活着不等于行情活着。
 
@@ -65,13 +87,20 @@ python knowledge/kb.py search "双底"
 ### 历史数据
 支持标准 JSONL/CSV，以及文档化的 Alpaca 导出字段：`timestamp` 是一分钟 bar 开始时刻，适配器加一分钟转收盘时刻，feed 保留在来源标识中。单次回放只能是一条按时间排序的数据流；不静默排序、混合数据源或填造缺失价格。
 
-### 可选实时适配
-已实现 Alpaca 已收盘一分钟 REST 轮询与已保存 connector 响应桥接，见[连接步骤](docs/LIVE_ADAPTER.md)。已做有限轮次的真实 IEX 闭合条采集，见[实测证据](docs/reports/LIVE_CONNECTOR_VALIDATION.md)；近期 SIP 被权限拒绝，未部署独立常驻服务。新增9个概念的可判定子集，包括 MTR 发展、末旗候选、完整5分钟聚合，不冒充完整主观形态，见[精确定义](docs/STRUCTURES.md)与[v0.4验收](docs/reports/V04_VALIDATION.md)。
+### 主动数据源与日线 swing
+升级旧版请先读[迁移说明](docs/MIGRATION_V05.md)，不要复用旧代码身份的日志。
+Robinhood 是当前主动取数路径，复用用户已安装的 [Robinhood trading infra](https://github.com/GordonBai/robinhood-trading-infra) 官方 Codex MCP transport，不复制 OAuth 凭据。只有股票历史和报价两个工具在代码白名单内。分钟/5/10/30分钟/小时/4小时及日线使用明确粒度，不把日线伪装成分钟线。配置和运行命令见 [Robinhood 接入](docs/ROBINHOOD.md)。
+
+**默认严格：`interpolated=true` 一律排除；字段缺失视为未知，也不进入形态分析。** 显式 `--accept-unknown` 才能探索未知质量数据，所有输出保留 `DATA_QUALITY_UNKNOWN`，`ready=false`。正成交量不能证明没有插值。实测近期分钟和日线缺该字段，所以严格模式不产生 PA；并非悄悄改用另一个供应商。
+
+日线用 XNYS 交易日历，跨周末/假日连续分析，缺交易日则重置。供应商每日 UTC 日期标签转换为**下一 UTC 零点的保守可用时刻**，不是开盘时已知。开盘专用/5分钟聚合检测不用于日线。本地 EMA20、Wilder RSI14 和引擎均值 TR 分开展示其种子与预热；不冒充供应商技术指标。形态优先级只是展示规则，不是胜率。
+
+旧 Alpaca 数据导入、历史证据与显式兼容入口仍保留，但不作为默认生产路径，不会自动回退。既往 SIP 三个月回放不是 Robinhood 三个月分钟线验证。实测 Robinhood 8/17 分钟线全是插值，不可用于分析。见 [v0.5 原始验收结论](docs/reports/ROBINHOOD_V05_ACCEPTANCE.md)。独立常驻服务、无人值守可靠性仍未部署验证。
 
 ## 架构
 ```mermaid
 flowchart LR
-  A[已收盘行情 / 历史回放] --> B[时间与OHLCV验证]
+  A[Robinhood 主动请求 / 显式离线回放] --> B[时间与OHLCV验证]
   B --> C[逐根因果引擎]
   B --> J[本地SQLite日志]
   C --> D[形态生命周期与MM锚点]
@@ -82,6 +111,8 @@ flowchart LR
 
 | 目录 | 职责 |
 |---|---|
+| `pa_lens/robinhood.py` / `rh_runtime.py` | 只读白名单、主动获取、原始来源与质量 |
+| `pa_lens/analytics.py` / `timeframes.py` | 本地指标、日线日历和连续性 |
 | `pa_lens/core.py` | 数据契约、逐根规则、投射 |
 | `pa_lens/service.py` | 认证、日志、重启恢复、健康状态 |
 | `pa_lens/dashboard.html` | 本地曲线与解释面板 |
@@ -103,9 +134,9 @@ flowchart LR
 | 项目 | 真实边界 |
 |---|---|
 | 因果性 | 右侧确认完成后才能发布，不回填早期信号 |
-| 实时接入 | 有限轮次 IEX 已实采；不代表全市场 SIP 或常驻运行 |
+| 主动接入 | Robinhood 真实历史/报价已取；未知插值必须显式探索，不承诺常驻运行 |
 | 11月17日 SOXL | 先前已研究过，只能称已知案例，不是盲测 |
-| 三个月 SOXL | 66个交易日历史逐根观察；固定日历样本仍需独立标注 |
+| 三个月 SOXL | Robinhood 日线66根可探索；旧SIP分钟回放与新源分开，不能互作覆盖证明 |
 | 费用 | 无逐笔报价/成交时属于成本情景假设 |
 | 复权 | 连接器未暴露参数时必须标未验证 |
 | 形态 | 部分启发式；H2和三推已扩展，完整MTR等仍未完成 |

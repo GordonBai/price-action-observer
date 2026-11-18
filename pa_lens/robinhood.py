@@ -83,7 +83,9 @@ def _options(interval, bounds, adjustment):
         raise ValueError("unsupported Robinhood interval")
     if not isinstance(bounds, str) or bounds not in BOUNDS:
         raise ValueError("unsupported Robinhood bounds")
-    if adjustment not in ("none", "split", "all") or (interval == "day" and adjustment == "all"):
+    if interval == "day" and bounds != "regular":
+        raise ValueError("daily analysis requires regular bounds")
+    if adjustment not in ("none", "split", "all") or (interval != "day" and adjustment == "all"):
         raise ValueError("unsupported Robinhood adjustment type for this interval")
 
 
@@ -136,6 +138,8 @@ def _results(payload):
     data = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(data, dict) or not isinstance(data.get("results"), list):
         raise RobinhoodError("ROBINHOOD_RESPONSE_SCHEMA_MISMATCH")
+    if any(data.get(key) for key in ("errors", "not_found", "restricted")):
+        raise RobinhoodError("ROBINHOOD_PROVIDER_ERROR_OR_RESTRICTED_RESULT")
     return data["results"]
 
 
@@ -192,7 +196,7 @@ class RobinhoodProvider:
 
     def fetch(self, symbols, start, end, *, interval="minute", bounds="regular",
               adjustment_type="split", accept_unknown=False):
-        """Read original OHLCV; return only provably closed, usable intraday bars."""
+        """Read original OHLCV; return only provably closed, usable closed bars."""
         if type(accept_unknown) is not bool:
             raise ValueError("accept_unknown must be a boolean")
         names = _symbols(symbols)
@@ -210,15 +214,15 @@ class RobinhoodProvider:
         if accept_unknown:
             source += ":accept_unknown"
         minutes = INTERVAL_MINUTES.get(interval)
-        duration = timedelta(minutes=minutes or 0)
+        duration = timedelta(days=1) if minutes is None else timedelta(minutes=minutes)
         bars, raw, batches = [], [], []
         provenance = {}
         counts = ("received", "emitted", "interpolated", "invalid", "incomplete",
-                  "duplicates", "out_of_range", "daily_raw_only",
+                  "duplicates", "out_of_range",
                   "not_interpolated", "interpolation_unknown", "unknown_emitted")
         quality = dict.fromkeys(counts, 0)
         quality.update({"interpolated_opens": {}, "interpolation_unknown_opens": {}, "missing_results": [],
-                        "no_usable_symbols": [], "daily_normalization_supported": interval != "day",
+                        "no_usable_symbols": [], "daily_normalization_supported": True,
                         "accept_unknown": accept_unknown})
         seen = {}
 
@@ -275,9 +279,6 @@ class RobinhoodProvider:
                                 continue
                         else:
                             local["not_interpolated"] += 1
-                        if minutes is None:
-                            local["daily_raw_only"] += 1
-                            continue
                         if opened.second or opened.microsecond or (bounds == "regular" and item.get("session") != "reg"):
                             local["invalid"] += 1
                             continue
@@ -286,7 +287,7 @@ class RobinhoodProvider:
                             continue
                         closed = opened + duration
                         try:
-                            normalized = _normalized(symbol, minutes, closed, item, source)
+                            normalized = _normalized(symbol, minutes or "D", closed, item, source)
                         except (ValueError, OverflowError):
                             local["invalid"] += 1
                             continue
@@ -294,6 +295,7 @@ class RobinhoodProvider:
                         provenance[(symbol, normalized.time)] = {
                             "symbol": symbol, "time": normalized.time, "opened_at": opened.isoformat(),
                             "batch": index, "session": item.get("session"),
+                            **({"session_date": opened.date().isoformat()} if minutes is None else {}),
                             "interpolation": "unknown" if unknown else "explicit_false",
                             "quality": "DATA_QUALITY_UNKNOWN" if unknown else "INTERPOLATION_EXPLICIT_FALSE",
                         }

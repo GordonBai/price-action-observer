@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from .timeframes import consecutive_daily
 from .core import Engine, parse_time
 from .replay import _validated, load_bars, run_replay
 from .presentation import summarize_events
@@ -42,9 +43,11 @@ def future_path(bars, index, horizon):
     future = []
     previous = current
     for b in bars[index + 1:index + 1 + horizon]:
-        if session_date(b) != session_date(current):
+        if current.timeframe=='D':
+            if not consecutive_daily(parse_time(previous.time),parse_time(b.time)): break
+        elif session_date(b) != session_date(current):
             break
-        if parse_time(b.time)-parse_time(previous.time) != timedelta(minutes=int(current.timeframe)):
+        elif parse_time(b.time)-parse_time(previous.time) != timedelta(minutes=int(current.timeframe)):
             break
         future.append(b)
         previous = b
@@ -58,7 +61,7 @@ def future_path(bars, index, horizon):
         'end_close_change': future[-1].close-current.close if future else None,
         'maximum_high': max(b.high for b in future) if future else None,
         'minimum_low': min(b.low for b in future) if future else None,
-        'note': '仅事后路径；不是胜率、盈亏、成交或形态真值。跨会话或缺数即截断。',
+        'note': '仅事后路径；不是胜率、盈亏、成交或形态真值。日线按连续交易日；分钟线不跨会话，缺数即截断。',
     }
 
 
@@ -108,12 +111,20 @@ def audit_bars(bars, config=None, *, horizon=20, known_case_date=KNOWN_CASE):
     if known_case_date in by_day and known_case_date not in selected:
         selected.append(known_case_date)
         selected.sort()
+    daily = bars[0].timeframe=='D'
     checks = []
     for day in selected:
-        session_bars = by_day[day]
-        for count in sorted({min(n,len(session_bars)) for n in (1,5,20,60,120,len(session_bars))}):
-            rebuilt = run_replay(session_bars[:count], config)['events']
-            expected = [e for e in events_day[day] if e['observed_at'] <= session_bars[count-1].time and e['family'] != 'session_reset']
+        if daily:
+            session_bars=bars
+            counts=[index[by_day[day][0].time]+1]
+            reference=events
+        else:
+            session_bars=by_day[day]
+            counts=sorted({min(n,len(session_bars)) for n in (1,5,20,60,120,len(session_bars))})
+            reference=events_day[day]
+        for count in counts:
+            rebuilt=run_replay(session_bars[:count],config)['events']
+            expected=[e for e in reference if e['observed_at']<=session_bars[count-1].time and e['family']!='session_reset']
             checks.append({'session':day,'bars':count,'until':session_bars[count-1].time,
                            'passed':rebuilt==expected,'rebuilt_sha256':_fingerprint(rebuilt),
                            'full_prefix_sha256':_fingerprint(expected)})
@@ -121,7 +132,7 @@ def audit_bars(bars, config=None, *, horizon=20, known_case_date=KNOWN_CASE):
     for e in events:
         i = index[e['observed_at']]
         times = set(_anchor_times(e.get('anchors', {})))
-        times.update(b.time for b in bars[max(0,i-4):i+1] if session_date(b)==session_date(bars[i]))
+        times.update(b.time for b in bars[max(0,i-4):i+1] if daily or session_date(b)==session_date(bars[i]))
         evidence = [asdict(bars[index[t]]) for t in sorted(times) if t in index and index[t] <= i]
         tape.append({'event':e, 'observed_bar':asdict(bars[i]), 'evidence_bars':evidence,
                      'evidence_note':'最近最多5根及可解析的历史锚点；完整窗口请按源行情复核，不是完整图表证明。',
@@ -145,15 +156,15 @@ def audit_bars(bars, config=None, *, horizon=20, known_case_date=KNOWN_CASE):
     for group in display['groups']:
         day = parse_time(group['observed_at']).astimezone(NY).date().isoformat()
         display_counts[day] += 1
-    observed_hours = sum(int(b.timeframe) for b in bars)/60
+    observed_hours = None if bars[0].timeframe=="D" else sum(int(b.timeframe) for b in bars)/60
     display_summary = {
         'stats':display['stats'], 'config':display['config'],
         'presentation_version':display['presentation_version'],
         'groups_by_session':display_counts,
         'groups_per_session':display['stats']['displayed_groups']/len(by_day),
-        'groups_per_hour':display['stats']['displayed_groups']/observed_hours,
+        'groups_per_hour':display['stats']['displayed_groups']/observed_hours if observed_hours else None,
         'observed_hours':observed_hours,
-        'denominator_note':'观测bar数量×各bar周期，不含隔夜、缺失时段；不是墙钟覆盖时长。',
+        'denominator_note':'Daily OHLCV does not measure observed hours.' if observed_hours is None else '观测bar数量×各bar周期，不含隔夜、缺失时段；不是墙钟覆盖时长。',
         'interpretation':'展示优先级与冷却仅降噪，不是置信度、准确率或交易建议；原始事件全部保留。',
     }
     package = Path(__file__).resolve().parent

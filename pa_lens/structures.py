@@ -98,6 +98,7 @@ class StructureDetector:
         return out
 
     def _opening(self,bar,context):
+        if bar.timeframe=="D":return []
         out=[];local=datetime.fromisoformat(bar.time).astimezone(NY);minutes=local.hour*60+local.minute-570
         if local.second or local.microsecond:self.opening=None;return []
         period=int(bar.timeframe)

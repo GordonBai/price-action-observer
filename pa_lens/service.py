@@ -5,10 +5,10 @@ independently verified live feed. No brokerage or order API is implemented.
 """
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import hmac
 import json
+from importlib.metadata import version
 import sqlite3
 import threading
 from collections import deque
@@ -19,12 +19,13 @@ from urllib.parse import urlsplit, parse_qs
 
 from .core import Bar, Engine, ENGINE_VERSION
 from .presentation import PresentationProjector
+from .journal_lock import JournalLock
 
 MAX_BODY = 65536
 MAX_STREAMS = 64
 # Pin the engine sources loaded by this process, not unrelated documentation commits.
 _code_hash = hashlib.sha256()
-for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py'):
+for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py'):
     _path = Path(__file__).with_name(_name)
     if _path.exists():
         _code_hash.update(_name.encode() + b'\0' + _path.read_bytes())
@@ -91,14 +92,8 @@ class Journal:
         self._file_lock = None
         try:
             if str(db_path) != ':memory:':
-                # Lock the database inode itself, including symlink/hardlink aliases.
-                # flock is independent of SQLite's byte-range transaction locks.
                 db_path = Path(db_path).expanduser().resolve()
-                self._file_lock = open(db_path, 'a+b')
-                try:
-                    fcntl.flock(self._file_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError as exc:
-                    raise RuntimeError('journal already in use by another instance or process') from exc
+                self._file_lock = JournalLock(db_path)
             self._initialize(db_path, config)
         except BaseException:
             self.close()
@@ -106,6 +101,8 @@ class Journal:
 
     def _initialize(self, db_path, config):
         self.conn = sqlite3.connect(str(db_path), check_same_thread=False)
+        if self._file_lock is not None:
+            self._file_lock.verify(db_path)
         self.conn.execute('PRAGMA journal_mode=WAL')
         self.conn.execute('''CREATE TABLE IF NOT EXISTS bars (
             seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,8 +119,9 @@ class Journal:
             source TEXT NOT NULL, symbol TEXT NOT NULL, timeframe TEXT NOT NULL,
             status TEXT NOT NULL, checked_at TEXT NOT NULL, rows INTEGER NOT NULL,
             error TEXT, PRIMARY KEY(source,symbol,timeframe))''')
+        self.conn.execute('CREATE TABLE IF NOT EXISTS acquisitions (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL, payload TEXT NOT NULL, after_bar_seq INTEGER NOT NULL)')
         self.conn.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
-        identity = {'config_hash': Engine(config).config_hash,
+        identity = {'exchange_calendars_version': version('exchange-calendars'), 'config_hash': Engine(config).config_hash,
                     'engine_version': ENGINE_VERSION, 'core_sha256': CORE_SHA256,
                     'knowledge_sha256': Engine(config).snapshot()['knowledge_version'],
                     'display_config':json.dumps(self.display_config,sort_keys=True)}
@@ -136,6 +134,10 @@ class Journal:
         self.identity = identity
         self.conn.commit()
         self.streams = {}
+        self._acquisition_flags = {}
+        self._coverage_starts = {}
+        for (raw,) in self.conn.execute('SELECT payload FROM acquisitions ORDER BY id'):
+            self._remember_acquisition(json.loads(raw))
         self._rebuild()
 
     def _new(self):
@@ -153,7 +155,8 @@ class Journal:
             'SELECT 1 FROM observation_audit WHERE symbol=? AND timeframe=? AND source=? AND after_bar_seq<? LIMIT 1',
             (*key, bar_seq)).fetchone()
         if known_at_receipt:
-            events = [{**event, 'data_quality': 'known_revision_or_late_data',
+            events = [{**event, 'data_quality': ('DATA_QUALITY_UNKNOWN' if event.get('data_quality')=='DATA_QUALITY_UNKNOWN' else 'known_revision_or_late_data'),
+                       'data_quality_flags': sorted(set(event.get('data_quality_flags',[])+[event.get('data_quality','INTERPOLATION_UNSPECIFIED'),'known_revision_or_late_data'])),
                        'interpretation_basis': 'first_received_bars_not_recomputed'}
                       for event in events]
         stream['bars'].append(data)
@@ -291,6 +294,58 @@ class Journal:
                 for row in self.conn.execute(
                     'SELECT source,symbol,timeframe,status,checked_at,rows,error FROM transport ORDER BY source,symbol,timeframe')]
 
+    def record_acquisition(self, evidence):
+        """Persist normalized request/provenance, not credentials or raw transport errors."""
+        required = {'source','symbols','timeframe','received_at','cutoff','status','quality','batches','bar_provenance'}
+        if not isinstance(evidence,dict) or set(evidence)!=required:
+            raise ValueError('invalid acquisition evidence')
+        if evidence['status'] not in ('DATA_QUALITY_UNKNOWN','NO_USABLE_BARS','PARTIAL_DATA','ELIGIBLE_OBSERVATIONS'):
+            raise ValueError('invalid acquisition status')
+        encoded=json.dumps(evidence,sort_keys=True,allow_nan=False)
+        with self.lock:
+            seq=self.conn.execute('SELECT COALESCE(MAX(seq),0) FROM bars').fetchone()[0]
+            cursor=self.conn.execute('INSERT INTO acquisitions(source,payload,after_bar_seq) VALUES(?,?,?)',
+                                     (evidence['source'],encoded,seq))
+            self.conn.commit()
+            self._remember_acquisition(evidence)
+            return cursor.lastrowid
+
+    def _remember_acquisition(self, item):
+        for symbol in item['symbols']:
+            key=(symbol,item['timeframe'],item['source'])
+            self._acquisition_flags.setdefault(key,set()).add(item['status'])
+            starts=[b['request']['start_time'] for b in item['batches']
+                    if symbol in b.get('request',{}).get('symbols',[]) and 'start_time' in b['request']]
+            if starts:
+                self._coverage_starts.setdefault(key,min(starts,key=_datetime))
+
+    def coverage_start(self, symbol, timeframe, source):
+        return self._coverage_starts.get((symbol,timeframe,source))
+
+    def _acquisitions(self, limit=10):
+        result=[]
+        for row in self.conn.execute('SELECT id,payload FROM acquisitions ORDER BY id DESC LIMIT ?', (limit,)):
+            item=dict(id=row[0],**json.loads(row[1]))
+            item['provenance_count']=len(item['bar_provenance'])
+            item['bar_provenance']=item['bar_provenance'][:20]
+            item['batches_count']=len(item['batches']);item['batches']=item['batches'][:10]
+            for field in ('interpolated_opens','interpolation_unknown_opens'):
+                item['quality'].pop(field,None)
+            item['snapshot_truncated']=True
+            result.append(item)
+        return result
+
+    def _acquisition_status(self, key=None):
+        # Sticky, incrementally cached quality. Detailed evidence remains in SQLite.
+        statuses=set(self._acquisition_flags.get(key,set())) if key else set().union(*self._acquisition_flags.values())
+        if key and key[2].endswith(':accept_unknown'):
+            statuses.add('DATA_QUALITY_UNKNOWN')
+        if key is None and any(k[2].endswith(':accept_unknown') for k in self.streams):
+            statuses.add('DATA_QUALITY_UNKNOWN')
+        for status in ('DATA_QUALITY_UNKNOWN','PARTIAL_DATA','NO_USABLE_BARS'):
+            if status in statuses:return status
+        return None
+
     def _data_quality(self, key=None):
         where = ' WHERE symbol=? AND timeframe=? AND source=?' if key else ''
         rows = self.conn.execute(
@@ -299,9 +354,10 @@ class Journal:
         counts = {kind: count for kind, count, _ in rows}
         total = sum(counts.values())
         observations = sum(count for _, _, count in rows)
-        return {'interpretation_status': 'known_revision_or_late_data' if total else 'no_known_quarantine',
+        acquisition_status=self._acquisition_status(key)
+        return {'acquisition_status':acquisition_status, 'interpretation_status': 'known_revision_or_late_data' if total else 'no_known_quarantine',
                 'interpretation_basis': 'first_received_bars_not_recomputed',
-                'status': 'DATA_REVIEW_REQUIRED' if total else 'NO_QUARANTINED_OBSERVATIONS',
+                'status': 'DATA_REVIEW_REQUIRED' if total else (acquisition_status or 'NO_QUARANTINED_OBSERVATIONS'),
                 'quarantined_count': total, 'revision_count': counts.get('revision', 0),
                 'late_arrival_count': counts.get('late_arrival', 0),
                 'observation_count': observations, 'duplicate_count': observations-total,
@@ -323,6 +379,8 @@ class Journal:
                 quality = self._data_quality((symbol, timeframe, source))
                 if any(t['status']=='error' and (t['symbol'],t['timeframe'],t['source'])==(symbol,timeframe,source) for t in transport):
                     readiness = 'TRANSPORT_ERROR'
+                if quality['acquisition_status']:
+                    readiness = quality['acquisition_status']
                 if quality['quarantined_count']:
                     readiness = 'DATA_REVIEW_REQUIRED'
                 result.append(dict(data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
@@ -334,17 +392,19 @@ class Journal:
             quality = self._data_quality()
             if any(t['status']=='error' for t in transport):
                 ready, readiness = False, 'TRANSPORT_ERROR'
+            if quality['acquisition_status']:
+                ready, readiness = False, quality['acquisition_status']
             if quality['quarantined_count']:
                 ready, readiness = False, 'DATA_REVIEW_REQUIRED'
-            return {'transport': transport, 'data_quality': quality, 'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
+            return {'acquisitions':self._acquisitions(), 'transport': transport, 'data_quality': quality, 'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
                     'rule_identity': dict(self.identity), 'streams': result,
-                    'notice': '存在隔离修订或迟到数据时，解释基于首次接收版K线且未重算，须另库复核，不应依赖其结构判断。接收器不是行情供应商；RECENT仅表示提交的时间戳接近当前，不代表已验证实时报价。收市时历史bar会显示STALE。'}
+                    'notice': 'Robinhood 主动只读获取；DATA_QUALITY_UNKNOWN 表示插值标记缺失，探索结果不可当已验证信号。本地 EMA/RSI 独立计算，不等于供应商指标。日线时间为保守的下一 UTC 午夜可用时刻。存在隔离修订或迟到数据时，解释基于首次接收版K线且未重算，须另库复核，不应依赖其结构判断。接收器不是行情供应商；RECENT仅表示提交的时间戳接近当前，不代表已验证实时报价。收市时历史bar会显示STALE。'}
 
     def health(self, now=None):
         result = self.snapshot(now)
         streams = [{key: stream[key] for key in ('symbol','timeframe','source','bar_count','last_bar_close','received_at','age_seconds','freshness','readiness','ready','data_quality')} for stream in result['streams']]
         status = 'WAITING_FOR_DATA' if not streams else ('RECENT_INPUT' if all(s['freshness']=='RECENT' for s in streams) else 'STALE')
-        return {'transport': result['transport'], 'data_quality': result['data_quality'], 'status': status, 'live_verified': False, 'ready': result['ready'], 'readiness': result['readiness'], 'rule_identity': result['rule_identity'], 'streams': streams, 'notice': result['notice']}
+        return {'acquisitions':result['acquisitions'], 'transport': result['transport'], 'data_quality': result['data_quality'], 'status': status, 'live_verified': False, 'ready': result['ready'], 'readiness': result['readiness'], 'rule_identity': result['rule_identity'], 'streams': streams, 'notice': result['notice']}
 
     def close(self):
         with self.lock:
@@ -354,8 +414,7 @@ class Journal:
                     self.conn = None
             finally:
                 if self._file_lock is not None:
-                    # Never unlink a sidecar lock while another process might use it;
-                    # this lock lives on the database inode and closes with the fd.
+                    # Sidecars persist to prevent a second lock domain.
                     self._file_lock.close()
                     self._file_lock = None
 
