@@ -34,9 +34,10 @@ def main():
         rh.add_argument('--accept-unknown',action='store_true',help='exploratory only: unknown interpolation, ready=false')
         rh.add_argument('--infra-root',help='existing installed Robinhood trading infra; never copies credentials')
         rh.add_argument('--codex-binary',default='codex');rh.add_argument('--timeout',type=float,default=30)
-        rh.add_argument('--db',default='local_data/robinhood-v06.sqlite3')
+        rh.add_argument('--db',default='local_data/robinhood-v07.sqlite3')
         rh.add_argument('--capture-dir',help='optional private capture; inside project only local_data/')
-        rh.add_argument('--native-indicators',help='all or comma-separated native types; off by default')
+        rh.add_argument('--no-native-context',action='store_true',help='disable automatic EMA20/RSI14 requests; no local fallback')
+        rh.add_argument('--native-indicators',help='extra native types; EMA20/RSI14 context is automatic unless --no-native-context')
         rh.add_argument('--native-config',help='JSON list of type/parameters/interval/output objects')
         rh.add_argument('--native-output',default='latest',help='series, latest, or last:N')
         rh.add_argument('--native-interval',help='explicit provider interval, independent of PA period; required override for PA15m')
@@ -115,7 +116,7 @@ def _run_robinhood(args,parser):
     from .robinhood import open_robinhood,RobinhoodError,_time,_symbols,_options,INTERVAL_MINUTES
     from .rh_runtime import acquire,next_poll_delay,poll_start,poll_windows,source_identity
     from .service import Journal,make_server
-    from .native_runtime import native_specs,validate_native,acquire_native,restore_native_start
+    from .native_runtime import native_specs,validate_native,acquire_native,restore_native_start,context_specs
     import math,time,threading
     _symbols(args.symbols);_options('5minute' if args.interval=='15minute' else args.interval,args.bounds,args.adjustment)
     if args.interval=='15minute' and args.bounds!='regular':parser.error('derived 15minute requires regular bounds')
@@ -133,6 +134,7 @@ def _run_robinhood(args,parser):
         if config_path.stat().st_size>65536:parser.error('native config exceeds 64 KiB')
         configuration=json.loads(config_path.read_text(encoding='utf-8'))
     specs=native_specs(args.native_indicators,configuration,args.native_interval or args.interval,args.native_output)
+    specs=context_specs(specs,interval=args.native_interval or args.interval,enabled=not args.no_native_context,bounds=args.bounds)
     native_start=_time(args.native_window_start) if args.native_window_start else (_time(args.start) if args.start else None)
     validation_end=_time(args.end) if args.end else datetime.now(timezone.utc)
     validation_start=native_start or validation_end-timedelta(days=180)
@@ -175,7 +177,9 @@ def _run_robinhood(args,parser):
                     native=acquire_native(provider,journal,args.symbols,native_start,end,specs,bounds=args.bounds,
                         adjustment_type=args.adjustment,capture_dir=args.capture_dir)
                     print(json.dumps({'native_indicators':native,'pa_interval':args.interval,'native_input_window_start':native_start.isoformat(),
-                        'notice':'Independent provider snapshots. Warmup/source quality unknown; not PA inputs or calibrated signals.'},ensure_ascii=False),flush=True)
+                        'notice':'Native values inform current indicator context only; pure candle patterns and historical events are unchanged. Warmup/source quality unknown; not calibrated signals.'},ensure_ascii=False),flush=True)
+                current=journal.snapshot()
+                print(json.dumps({'native_pa_context':[{'symbol':s['symbol'],'timeframe':s['timeframe'],**s['native_interpretation']} for s in current['streams'] if s['symbol'] in args.symbols and s['source']==source]},ensure_ascii=False),flush=True)
                 iterations+=1
                 if args.command=='fetch-robinhood' or args.once or (args.count and iterations>=args.count):break
                 delay=next_poll_delay(datetime.now(timezone.utc),args.interval,args.settle_seconds) if args.align_close else args.poll_seconds

@@ -25,7 +25,7 @@ MAX_BODY = 65536
 MAX_STREAMS = 64
 # Pin the engine sources loaded by this process, not unrelated documentation commits.
 _code_hash = hashlib.sha256()
-for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py', 'provider_indicators.py', 'native_runtime.py'):
+for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py', 'provider_indicators.py', 'native_runtime.py', 'native_interpretation.py'):
     _path = Path(__file__).with_name(_name)
     if _path.exists():
         _code_hash.update(_name.encode() + b'\0' + _path.read_bytes())
@@ -316,7 +316,7 @@ class Journal:
             item['batches_truncated']=item['batch_count']>10
             items.append(item)
         return dict(items=items,slot_count=count,limit=limit,truncated=count>limit,
-                    notice='Current independent provider snapshots; not historical PA inputs. Source quality/warmup unknown; latest does not mean fresh.')
+                    notice='Native values inform current indicator context, never historical PA events. Source quality/warmup unknown; latest does not mean fresh.')
 
     def record_acquisition(self, evidence):
         """Persist normalized request/provenance, not credentials or raw transport errors."""
@@ -392,6 +392,9 @@ class Journal:
         with self.lock:
             result = []
             transport = self._transport()
+            from .native_interpretation import interpret
+            native=self.native_snapshot()
+            observation_seq=self.conn.execute('SELECT COALESCE(MAX(seq),0) FROM bars').fetchone()[0]
             for (symbol, timeframe, source), stream in self.streams.items():
                 last = stream['bars'][-1]
                 age = (now - _datetime(last['time'])).total_seconds()
@@ -407,7 +410,7 @@ class Journal:
                     readiness = quality['acquisition_status']
                 if quality['quarantined_count']:
                     readiness = 'DATA_REVIEW_REQUIRED'
-                result.append(dict(data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
+                result.append(dict(native_interpretation=interpret(last,native['items'],now,observation_seq,bar_quality=quality),data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
                     bar_count=stream['bar_count'], bars=list(stream['bars']), events=list(stream['events']),
                     display=stream['display'].snapshot(), state=state, last_bar_close=last['time'], received_at=stream['received_at'],
                     age_seconds=round(age, 2), freshness=freshness, readiness=readiness, ready=readiness == 'READY_FOR_RESEARCH'))

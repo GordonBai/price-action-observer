@@ -393,7 +393,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "d2ad2773769d084c9b8a69bcee1fb8943dfa96bf3578edf0373f82e43781679b"
+            "sha256": "9343309f452d9ce1ad66153326be9be2d601bade829a7a66c47958a50ef5842b"
           }
         ],
         "limits": "Strict DB/DT and range-breakout events carry context/trigger/stop; not a general Brooks setup model.",
@@ -460,7 +460,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine._context",
-            "sha256": "d2ad2773769d084c9b8a69bcee1fb8943dfa96bf3578edf0373f82e43781679b"
+            "sha256": "9343309f452d9ce1ad66153326be9be2d601bade829a7a66c47958a50ef5842b"
           }
         ],
         "limits": "20-bar directional efficiency >0.55 is a coarse heuristic, not the full cycle.",
@@ -538,7 +538,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "d2ad2773769d084c9b8a69bcee1fb8943dfa96bf3578edf0373f82e43781679b"
+            "sha256": "9343309f452d9ce1ad66153326be9be2d601bade829a7a66c47958a50ef5842b"
           }
         ],
         "limits": "Strict delayed-pivot, tolerance/rebound and neckline-close variant only; not all Brooks DB flags/tests.",
@@ -606,7 +606,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "d2ad2773769d084c9b8a69bcee1fb8943dfa96bf3578edf0373f82e43781679b"
+            "sha256": "9343309f452d9ce1ad66153326be9be2d601bade829a7a66c47958a50ef5842b"
           }
         ],
         "limits": "Mirror strict DB heuristic; not full Brooks double-top coverage.",
@@ -680,7 +680,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update; project_equal_leg",
-            "sha256": "d2ad2773769d084c9b8a69bcee1fb8943dfa96bf3578edf0373f82e43781679b"
+            "sha256": "9343309f452d9ce1ad66153326be9be2d601bade829a7a66c47958a50ef5842b"
           }
         ],
         "limits": "Range/DB height projections and manual AB=CD helper only; no automatic gap-MM or anchor hierarchy.",
@@ -2306,7 +2306,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "d2ad2773769d084c9b8a69bcee1fb8943dfa96bf3578edf0373f82e43781679b"
+            "sha256": "9343309f452d9ce1ad66153326be9be2d601bade829a7a66c47958a50ef5842b"
           },
           {
             "path": "pa_lens/advanced.py",

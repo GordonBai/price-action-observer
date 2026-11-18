@@ -12,7 +12,7 @@ from .observations import ObservationDetector
 from .structures import StructureDetector
 from .explanations import ground_event, KNOWLEDGE_VERSION
 
-ENGINE_VERSION = "0.6.0"
+ENGINE_VERSION = "0.7.0"
 
 
 def parse_time(value):
@@ -115,6 +115,10 @@ class Engine:
                 'invalidated':'已失效','expired':'已过期','reached':'目标触及，不代表反转','observed':'已观察'}
         event['explanation']=f"{words.get(family,family)}：{states.get(status,status)}。"+'；'.join(event['evidence'])
         if bar.source.endswith(':accept_unknown'): event['data_quality']='DATA_QUALITY_UNKNOWN'
+        if family in ('ema_gap','ema_first_return'):
+            event['interpretation_role']='LOCAL_DIAGNOSTIC'
+            event['indicator_origin']='local_ema20_not_primary'
+            event['explanation']='[本地诊断，非主PA解读] '+event['explanation']
         ground_event(event)
         self.events.append(event)
         if len(self.events)>500: del self.events[:-500]

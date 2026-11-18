@@ -21,7 +21,7 @@ class ExplanationTests(unittest.TestCase):
         event=next((x for x in out if x['family']=='doji'),None)
         self.assertIsNotNone(event)
         self.assertIn('candle-body-vs-range',event['knowledge_ids'])
-        self.assertEqual(event['rule_version'],'pa-lens/0.6.0')
+        self.assertEqual(event['rule_version'],'pa-lens/0.7.0')
     def test_advanced_parent_ids_resolve_to_published_events(self):
         from datetime import datetime,timedelta,timezone
         start=datetime(2026,11,17,14,31,tzinfo=timezone.utc)

@@ -206,7 +206,7 @@ indicator calculations and signals.
 
 ## Native indicator runtime (v0.6)
 
-Off by default. Add `--native-indicators all` for all eighteen types, or a
+EMA20/RSI14 context requests are automatic in v0.7 (disable with `--no-native-context`). Add `--native-indicators all` for all eighteen types, or a
 comma-separated list such as `--native-indicators ema,rsi,macd,pivot_points`.
 `--native-output latest` (default), `last:3`, or `series` controls provider output.
 `--native-interval` explicitly selects the provider timeframe, otherwise the PA
@@ -264,3 +264,16 @@ never silently changes a recursive indicator's window. Newly selected types or
 symbols inherit the single restored window when one exists (displayed per request).
 If refresh fails, native current-value rows are hidden and marked DISCONNECTED;
 a recently received response is never used as a substitute for point-time freshness.
+
+## Native-first interpretation contract (v0.7)
+Current snapshot interpretation uses native-only EMA20/RSI14, exact period/source
+semantics and matching latest-bar effective time. Receipt must be no later than
+generation and after_bar_seq cannot exceed the observed tape. It never restores
+a historical interpretation from later native snapshots. Local EMA pattern families
+are labeled audit diagnostics and excluded from primary presentation. Missing/
+partial/error/undefined/stale values remain unavailable, without local fallback.
+Value-age cutoff is max(120s,2×interval); receipt age is reported independently.
+Known quarantined bar revisions/late arrivals block comparison with the uncorrected
+first-received close. Unknown input/source quality remains visible. Automatic
+EMA20/RSI14 requests are merged by interval and exact period; all18 explicitly
+requests EMA20; EMA9 can be requested separately but cannot fill the EMA20 role.

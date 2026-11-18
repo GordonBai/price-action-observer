@@ -58,7 +58,7 @@ python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
 这是有限两轮探索，不是daemon部署。初次立即取数，后续按边界加等待时间；供应商没有公开延迟SLA。每个进程一套周期和多只标的；不同周期进程使用不同数据库。
 
 ### Robinhood 原生18指标
-新增独立的原生指标输出区，不替换本地 EMA20/RSI14，也不改变PA规则。支持全部18类、各自完整参数、多字段和 `series` / `latest` / `last:N`。默认不额外调用；显式启用：
+当前指标解读默认使用 Robinhood 原生 EMA20 / RSI14，**缺失、过期或不匹配时明确不可用，不回退本地计算**。本地值保留为诊断，纯K线结构与历史事件不改写。all18 显式请求 EMA20，EMA9 可另行配置。支持全部18类、完整参数、多字段和 `series` / `latest` / `last:N`：
 
 ```bash
 python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
@@ -159,3 +159,19 @@ flowchart LR
 欢迎带反例、测试和来源许可说明的贡献。不要提交凭证、受限原始行情或未经证实的收益声明。不加入自动订单或账户访问。
 
 MIT，保留[上游版权](LICENSE)。与 Al Brooks、Brooks Trading Course、TradingView、Alpaca、Robinhood 无官方关联。仅供研究学习，不构成投资建议，不保证盈利。
+
+### 原生优先的当前 PA 语境（v0.7）
+
+fetch/poll 默认请求原生 EMA20、RSI14，计入64次请求上限；all18 会合并去重，
+仍为18次。`--no-native-context` 可关闭自动请求，但绝不改用本地值。
+要求标的、周期、bounds、复权、实际参数及有效收盘时间与最新K线一致；
+EMA9 不代替 EMA20，5m 原生不冒充15m，派生15m原生语境明确不可用。
+数值年龄与接收年龄分别显示；超过 max(120秒, 两根周期) 则过期，
+日线48小时限制是保守阈值，休市也不会自动放宽。已知K线修订/迟到会阻止比较，
+避免把未重算的首次close当成修订后价格。原生源质量及暖机仍未知。
+
+纯价格结构独立输出。依赖本地均线的 ema_gap / ema_first_return 保留原始审计，
+标为 LOCAL_DIAGNOSTIC，主分组解读不展示，降到最低优先级也不混入。
+当前原生语境在读取快照时生成，显示生成时刻/接收时间，不逆写历史事件。
+历史定位直接提示“未记录当时原生解读”，不拿后来返回的数据回填。新版本使用新库，
+不会悄悄修改既有日志。

@@ -6,11 +6,12 @@
 <h1>Price Action Lens <span class="small">RESEARCH PREVIEW</span></h1><p>逐根已收盘 K 线 · 因果形态 · 中文证据解读。不是自动交易系统，不承诺覆盖全部 Brooks 形态。</p>
 <div class="row"><label>本地访问令牌 <input type="password" id="token" autocomplete="off" placeholder="PA_LENS_TOKEN"></label><button id="connect">读取 / 刷新</button><label><input type="checkbox" id="auto">每 5 秒刷新</label><select id="streams" aria-label="行情流"></select></div>
 <div id="error" role="alert"></div><div class="card"><strong id="status">尚未读取数据</strong><p id="notice" class="notice">接收器不是数据源。请先通过已验证的供应商适配器提交真实已收盘行情。历史回放不会被标为已验证实时行情。</p><div id="meta" class="small"></div></div>
+<div class="card"><h2>原生优先 PA 指标解读</h2><div id="native-context" style="white-space:pre-line;line-height:1.8">等待匹配原生 EMA20 / RSI14；不回退本地值。</div><details><summary>完整证据 / 参数 / 时间与质量</summary><pre id="native-context-evidence">尚无证据</pre></details></div>
 <div class="card"><h2>最近已收盘 OHLC 蜡烛</h2><svg id="chart" viewBox="0 0 1000 300" role="img" aria-label="已收盘OHLC蜡烛图"></svg><div id="range" class="small"></div><p id="focus-info" class="notice">显示当前快照；点击事件可隐藏其后的K线。</p><button id="clear-focus">返回最新快照</button></div>
-<div class="card"><h2>本地计算指标</h2><p class="small">本区不是供应商指标；EMA/RSI/ATR 来自本地已接纳 K 线，方法与暖机独立显示，不能当成供应商数值或校准胜率。unknown 行情不升级为已验证。</p><pre id="local-indicators">等待数据</pre></div>
-<div class="card"><h2>Robinhood 原生指标 <span class="small">独立请求快照，不是 PA 输入</span></h2><p id="native-notice" class="small">未选择原生指标时，不发送相关请求。</p><div id="native-indicators"></div></div>
-<div class="card"><h2>当前语境</h2><pre id="context">等待数据</pre></div>
+<div class="card"><h2>Robinhood 原生指标 <span class="small">用于当前指标语境，不改写纯K线形态或历史事件</span></h2><p id="native-notice" class="small">默认请求原生 EMA20 / RSI14；扩展指标可显式选择。</p><div id="native-indicators"></div></div>
+<div class="card"><h2>纯价格结构语境</h2><pre id="context">等待数据</pre></div>
 <div class="card"><h2>事件与解读 <span id="event-window" class="small">快照有限窗口；不是实际订单</span></h2><div class="row"><label>视图 <select id="event-mode"><option value="grouped">重点分组</option><option value="raw">原始事件</option></select></label><label>形态 <select id="family-filter"><option value="">全部</option></select></label><label>状态 <select id="status-filter"><option value="">全部</option></select></label><label id="basic-control"><input type="checkbox" id="show-basic">显示基础K线/缺口特征</label><span id="event-count" class="small"></span></div><details><summary>展示层过滤 / 冷却统计与配置</summary><pre id="display-stats">尚未读取</pre></details><table><thead><tr><th>可知时刻</th><th>形态 / 状态</th><th>证据解读</th></tr></thead><tbody id="events"></tbody></table></div>
+<div class="card"><h2>本地诊断指标（非主 PA 解读）</h2><p class="small">本区不是供应商指标；EMA/RSI/ATR 来自本地已接纳 K 线，方法与暖机独立显示，不能当成供应商数值或校准胜率。unknown 行情不升级为已验证。</p><pre id="local-indicators">等待数据</pre></div>
 <script>
 'use strict';
 let snapshot=null,focusEvent=null,requestNumber=0,nativeStale=false;
@@ -40,6 +41,27 @@ function renderChart(bars){
  }
  for(const [v,pos] of [[hi,25],[lo,285]]){const text=svgNode('text',{x:5,y:pos,fill:'#9fadc2','font-size':12});text.textContent=v.toFixed(4);chart.append(text)}
  $('range').textContent=bars[0].time+' → '+bars[bars.length-1].time+'；绿色收涨/红色收跌，影线为最高最低；时间为收盘时间。';
+}
+function renderNativeContext(stream){
+ const context=stream?.native_interpretation;
+ if(nativeStale||focusEvent){
+  $('native-context').textContent=nativeStale?'DISCONNECTED · 原生语境不可用':'历史时刻未记录原生解读，禁止后来快照回填。';
+  $('native-context-evidence').textContent='当前快照证据已隐藏，不能当作该时刻已知信息。';return;
+ }
+ if(!context){$('native-context').textContent='原生解读不可用：等待匹配的 EMA20 / RSI14；不回退本地计算。';$('native-context-evidence').textContent='尚无匹配证据';return}
+ const rows=['来源：Robinhood 原生 · 源质量 / 暖机未知，仅供观察。'];
+ if(context.reason)rows.push('当前不可用：'+context.reason);
+ for(const [key,title] of [['ema20','EMA20'],['rsi14','RSI14']]){
+  const item=context[key];
+  if(item?.status==='AVAILABLE_SOURCE_UNKNOWN'){
+   const relation={above:'收盘高于均线',below:'收盘低于均线',equal:'收盘等于均线'}[item.relation];
+   rows.push(title+'：'+item.value+' · 原生可读（质量未知）'+(relation?' · '+relation:''));
+   if(key==='rsi14')rows.push('RSI 仅描述数值，不代表必然反转。');
+  }else rows.push(title+'：不可用 · '+(item?.reason??context.reason??'缺少匹配原生值')+'；不回退本地值。');
+ }
+ rows.push('不是买卖指令；纯 K 线结构独立判断。');
+ $('native-context').textContent=rows.join('\n');
+ $('native-context-evidence').textContent=label(context);
 }
 function renderNative(stream){
  const container=$('native-indicators');container.replaceChildren();
@@ -74,13 +96,14 @@ function render(){
  // Snapshot context is not historical state. Hide it when focusing an earlier event.
  $('context').textContent=focusEvent?label({说明:'仅展示该事件当时保存的语境，不使用最新快照推断历史。',context:focusEvent.context??'事件未保存语境',knowledge_version:focusEvent.knowledge_version??null}):stream?label(summary):label({data_quality:snapshot.data_quality,acquisitions:snapshot.acquisitions||[]});
  $('local-indicators').textContent=focusEvent?'历史事件未保存当时指标快照；隐藏最新计算值，避免未来信息。':label(state.local_indicators??'等待数据');
+ renderNativeContext(stream);
  renderNative(stream);
  const bars=(stream?.bars||[]).filter(b=>!focusEvent||Date.parse(b.time)<=Date.parse(focusEvent.observed_at));
  renderChart(bars);
  $('focus-info').textContent=focusEvent?'已定位可知时刻 '+focusEvent.observed_at+'；后续K线与事件已隐藏。摆动锚点的发生时刻不等于当时已确认。':'显示当前快照；点击事件可隐藏其后的K线。';
  const body=$('events');body.replaceChildren();
  const basicFamilies=new Set(['doji','trend_bar','gap_open','body_gap','micro_gap','micro_channel']);
- const keep=e=>(!focusEvent||Date.parse(e.observed_at)<=Date.parse(focusEvent.observed_at))&&(!$('family-filter').value||e.family===$('family-filter').value)&&(!$('status-filter').value||e.status===$('status-filter').value);
+ const keep=e=>($('event-mode').value==='raw'||!['ema_gap','ema_first_return'].includes(e.family))&&(!focusEvent||Date.parse(e.observed_at)<=Date.parse(focusEvent.observed_at))&&(!$('family-filter').value||e.family===$('family-filter').value)&&(!$('status-filter').value||e.status===$('status-filter').value);
  const grouped=$('event-mode').value!=='raw'&&Array.isArray(display?.groups);
  $('basic-control').hidden=!!display||$('event-mode').value==='raw';
  $('event-window').textContent=grouped?'窗口：最近保留 '+display.groups.length+' 组；原始表为最近 '+events.length+' 条。下方统计为累计。':'窗口：最近 '+events.length+' 条原始事件，不是完整审计轨迹；累计统计另列。';
@@ -124,7 +147,7 @@ async function refresh(){
   snapshot.streams.forEach((s,i)=>{const o=node('option',s.symbol+' · '+s.timeframe+' · '+s.source);o.value=String(i);$('streams').append(o)});
   const selected=snapshot.streams.findIndex(s=>streamKey(s)===oldKey);$('streams').value=String(selected<0?0:selected);
   render();
- }catch(e){if(request!==requestNumber)return;nativeStale=true;renderNative(null);$('error').textContent=e.message;$('status').textContent='DISCONNECTED · 当前展示若有数据则为上次快照';}
+ }catch(e){if(request!==requestNumber)return;nativeStale=true;renderNativeContext(null);renderNative(null);$('error').textContent=e.message;$('status').textContent='DISCONNECTED · 当前展示若有数据则为上次快照';}
 }
 $('connect').addEventListener('click',refresh);
 $('streams').addEventListener('change',()=>{focusEvent=null;$('family-filter').value='';$('status-filter').value='';render()});

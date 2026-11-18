@@ -103,7 +103,8 @@ class NativeRuntimeTests(unittest.TestCase):
         try:
             j.ingest(sample());before=j.snapshot()['streams']
             acquire_native(FakeNative(),j,['SOXL'],START,END,native_specs('macd',None,'5minute','latest'))
-            self.assertEqual(before,j.snapshot()['streams'])
+            after=j.snapshot()['streams']
+            self.assertEqual([(s['events'],s['state']) for s in before],[(s['events'],s['state']) for s in after])
             self.assertEqual(j.native_snapshot()['items'][0]['after_bar_seq'],1)
         finally:j.close()
 

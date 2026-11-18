@@ -108,7 +108,7 @@ class RuntimeIdentityTests(unittest.TestCase):
     def test_ingestion_semantics_are_part_of_persisted_identity(self):
         import hashlib
         import pa_lens.service as service
-        names=('core.py','advanced.py','observations.py','structures.py','explanations.py','presentation.py','service.py','feed.py','journal_lock.py','analytics.py','timeframes.py','robinhood.py','rh_runtime.py','provider_indicators.py','native_runtime.py')
+        names=('core.py','advanced.py','observations.py','structures.py','explanations.py','presentation.py','service.py','feed.py','journal_lock.py','analytics.py','timeframes.py','robinhood.py','rh_runtime.py','provider_indicators.py','native_runtime.py','native_interpretation.py')
         digest=hashlib.sha256()
         for name in names:
             digest.update(name.encode()+b'\0'+Path(service.__file__).with_name(name).read_bytes())

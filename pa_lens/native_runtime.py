@@ -13,7 +13,7 @@ def native_specs(selection=None, configuration=None, interval='5minute', output=
     specs=[]
     if selection:
         names=list(INDICATOR_DEFAULTS) if selection=='all' else selection.split(',')
-        specs.extend(dict(type=name,parameters={},interval=interval,output=output) for name in names)
+        specs.extend(dict(type=name,parameters={'period':20} if selection=='all' and name=='ema' else {},interval=interval,output=output) for name in names)
     if configuration is not None:
         if not isinstance(configuration,list):raise ValueError('native config must be a list')
         for item in configuration:
@@ -113,3 +113,12 @@ def acquire_native(provider,journal,symbols,start,end,specs,*,bounds='regular',a
                          series=result.series if result else [],batches=result.batches if result else [],status='ERROR' if result is None else 'RECEIVED')
             (path/f'native-{output[-1]["snapshot_id"]}-{datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")}.json').write_text(json.dumps(payload,ensure_ascii=False,indent=2),encoding='utf-8')
     return output
+
+
+def context_specs(specs,interval='5minute',enabled=True,bounds='regular'):
+    result=list(specs)
+    if not enabled or interval=='15minute' or bounds not in ('regular','extended'):return result
+    for name,period in (('ema',20),('rsi',14)):
+        if not any(s['type']==name and s['interval']==interval and s['parameters'].get('period',INDICATOR_DEFAULTS[name]['period'])==period for s in result):
+            result.append(dict(type=name,parameters={'period':period},interval=interval,output='latest'))
+    return result

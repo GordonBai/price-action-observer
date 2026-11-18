@@ -8,6 +8,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 class PanelTests(unittest.TestCase):
+    def test_native_context_precedes_chart_and_local_diagnostics_are_last(self):
+        html=(ROOT/'pa_lens/dashboard.html').read_text()
+        self.assertLess(html.index('id="native-context"'),html.index('id="chart"'))
+        self.assertGreater(html.index('id="local-indicators"'),html.index('id="events"'))
+        self.assertIn('id="native-context-evidence"',html)
+
     def test_candles_filters_causal_focus_and_safe_sources(self):
         node=shutil.which('node'); browser=shutil.which('chromium')
         if not node or not browser:self.skipTest('optional Node/Chromium unavailable')
@@ -72,11 +78,14 @@ const html=fs.readFileSync(process.argv[1],'utf8'),code=html.match(/<script>([\s
 const ctx={document,URL,console,setInterval:()=>0,fetch:()=>{throw Error('not called')}};vm.createContext(ctx);vm.runInContext(code,ctx);
 const bars=[0,1,2].map(n=>({time:`2026-11-17T14:3${n+1}:00Z`,open:10+n,high:12+n,low:9+n,close:11+n}));
 const events=[{id:'a',observed_at:bars[1].time,family:'inside_bar',status:'observed',anchors:{level:10},explanation:'<img src=x>',knowledge_references:[{title:'test',summary:'summary',counterexample:'counter',source_urls:['https://example.com','javascript:alert(1)'],sources:[{review_method:'sampled_frames',locator:'page 3',limitations:'audio not heard'}]}],uncertainty:'uncertain'},{id:'b',observed_at:bars[2].time,family:'double_bottom',status:'candidate'}];
-ctx.fixture={native_indicators:{slot_count:2,items:[{symbol:'T',indicator_type:'macd',requested:{interval:'5minute',parameters:{}},returned_params:{fast_period:12},status:'AVAILABLE_SOURCE_UNKNOWN',latest:{time:'2026-11-17T14:35:00Z',values:{macd:'-1.2',signal:'0',histogram:null}},received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]},{symbol:'T',indicator_type:'supertrend',requested:{interval:'5minute',parameters:{}},status:'ERROR',latest:null,received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]}]},streams:[{symbol:'T',timeframe:'1',source:'fixture',bars,events,state:{}}]};
+ctx.fixture={native_indicators:{slot_count:2,items:[{symbol:'T',indicator_type:'macd',requested:{interval:'5minute',parameters:{}},returned_params:{fast_period:12},status:'AVAILABLE_SOURCE_UNKNOWN',latest:{time:'2026-11-17T14:35:00Z',values:{macd:'-1.2',signal:'0',histogram:null}},received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]},{symbol:'T',indicator_type:'supertrend',requested:{interval:'5minute',parameters:{}},status:'ERROR',latest:null,received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]}]},streams:[{symbol:'T',timeframe:'1',source:'fixture',bars,events,state:{},native_interpretation:{status:'AVAILABLE_SOURCE_UNKNOWN',source_quality:'unknown',ema20:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'48.55',relation:'below'},rsi14:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'40.82',explanation:'原生 RSI14 为40.82；仅描述数值。'},generated_at:'2026-11-17T14:36:00Z'}}]};
 vm.runInContext('snapshot=fixture;render()',ctx);
 function all(el,p){return [ ...(p(el)?[el]:[]), ...el.children.flatMap(x=>all(x,p)) ];}
 function countCandles(){return all(elements.chart,x=>x.attrs.class==='candle-body').length}
 assert.equal(countCandles(),3,'need OHLC candles');
+assert(elements['native-context'].textContent.includes('48.55'),'primary summary missing EMA value');
+assert(elements['native-context'].textContent.includes('低于'),'primary summary needs Chinese relation');
+assert(elements['native-context-evidence'].textContent.includes('generated_at'),'provenance must remain expandable');
 assert(JSON.stringify(elements['native-indicators']).includes('histogram'), 'native multi-fields missing');
 assert(JSON.stringify(elements['native-indicators']).includes('null'), 'null must not become zero');
 assert(JSON.stringify(elements['native-indicators']).includes('ERROR'), 'failed request hidden');
@@ -88,6 +97,8 @@ all(elements.events,x=>x.tagName==='button')[0].listeners.click();assert.equal(c
 assert(elements['focus-info'].textContent.includes('14:32'));
 assert.equal(elements['native-indicators'].children.length,0,'historical focus leaked later native values');
 assert(elements['native-notice'].textContent.includes('历史定位隐藏原生快照'));
+assert(elements['native-context'].textContent.includes('禁止后来快照回填'),'historical native primary context must hide');
+assert(!elements['native-context-evidence'].textContent.includes('48.55'),'historical focus leaked provenance values');
 assert.equal(all(elements.events,x=>x.tagName==='a').length,1,'reject unsafe source URL');
 assert(elements.context.textContent.includes('事件未保存语境'),'must not backfill latest context');
 assert(all(elements.events,x=>x.textContent==='反例 / 边界：counter').length===1,'source counterexample absent');
@@ -115,6 +126,8 @@ elements.streams.value='1';elements.streams.listeners.change();assert.equal(coun
  ctx.fetch=async()=>({ok:false,status:401});await vm.runInContext('refresh()',ctx);
  assert(elements.status.textContent.startsWith('DISCONNECTED'),'failure must mark stale display');
  assert(elements['native-notice'].textContent.startsWith('DISCONNECTED'),'native failure must explicitly mark stale');
+ assert(elements['native-context'].textContent.startsWith('DISCONNECTED'),'primary native context must clear on fetch failure');
+assert(!elements['native-context-evidence'].textContent.includes('48.55'),'disconnect leaked provenance values');
  assert.equal(elements['native-indicators'].children.length,0,'stale native values must hide');
  assert(!JSON.stringify(elements).includes('not-a-real-secret'),'credential rendered in output');
  console.log('ok');

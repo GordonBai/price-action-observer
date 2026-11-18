@@ -58,7 +58,7 @@ python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
 This is a bounded two-round exploratory run, not daemon deployment. The first request is immediate; later rounds use a close grid plus settling delay, without a provider latency SLA. One process handles one interval and multiple symbols; separate interval processes need separate journals.
 
 ### All 18 native Robinhood indicators
-Native outputs have a separate view: they do not replace local EMA20/RSI14 or alter PA rules. All eighteen types, type-specific parameters, multiple value fields and `series` / `latest` / `last:N` are supported. Extra calls are off by default; enable them explicitly:
+Current indicator interpretation now uses Robinhood native EMA20/RSI14 by default, with **no local fallback**. Missing, stale, partial, wrong-period or mismatched-time results are explicitly unavailable. Local calculations remain diagnostics; pure candle structures and past events are unchanged. All18 explicitly requests EMA20 (EMA9 remains configurable). Additional types support full parameters, multiple fields and `series` / `latest` / `last:N`:
 
 ```bash
 python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
@@ -157,3 +157,23 @@ Tests first, explicit source/licensing notes, negative examples and realistic da
 
 ## License and disclaimer
 MIT; upstream copyright remains in [LICENSE](LICENSE). Independent research software, not affiliated with Al Brooks, Brooks Trading Course, TradingView, Alpaca or Robinhood. Educational use only; signals may be wrong, and backtests are hypothetical. No investment advice or profitability guarantee.
+
+### Native-first current PA context (v0.7)
+
+Fetch/poll automatically requests EMA20 and RSI14, counted in the 64-call budget;
+`--no-native-context` disables automatic calls but never enables local fallback.
+`--native-indicators all` merges these into eighteen requests, not twenty.
+Primary context requires matching symbol/native period/bounds/adjustment, exact
+EMA20 or RSI14 parameters, and the same effective close as the latest bar. It
+exposes both value age and receipt age. Values older than max(120 seconds, twice
+the interval) are unavailable (daily threshold48 hours is conservative, including
+closed markets). Known bar revisions/late arrivals block the comparison because
+the original close was not recomputed. Native source/warmup remain unknown.
+
+Native15m is unavailable; 5m values never substitute for derived15m PA context.
+Pure-price structures still work without native indicators. Local `ema_gap` and
+`ema_first_return` are retained as LOCAL_DIAGNOSTIC audit events but excluded from
+primary grouped interpretation even at minimum priority. Current context is
+generated at snapshot read time, not attached retroactively to old events. Historical
+focus explicitly shows no recorded native interpretation rather than using later
+receipts. Use a new v0.7 journal; no existing database is silently rewritten.

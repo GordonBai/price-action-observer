@@ -9,7 +9,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 import math
 
-VERSION='presentation/0.1'
+VERSION='presentation/0.2'
 _BASIC={'doji','trend_bar','gap_open','body_gap','micro_gap','micro_channel','inside_bar','outside_bar'}
 _KEY={'double_bottom','double_top','three_push_wedge','range_breakout','breakout_observation','failed_breakout','failed_failure','opening_reversal','measured_move','data_gap','session_reset'}
 
@@ -75,6 +75,8 @@ class PresentationProjector:
             if len(self.seen_order)>4096:self.seen.remove(self.seen_order.popleft())
             self.stats['raw_events']+=1
             t=_time(e['observed_at']);self.last_time=t
+            if e['family'] in ('ema_gap','ema_first_return') or e.get('interpretation_role')=='LOCAL_DIAGNOSTIC':
+                self.stats['hidden_local_diagnostic']+=1;continue
             p=priority(e)
             if p<self.min_priority:
                 self.stats['hidden_by_priority']+=1;continue
@@ -104,7 +106,7 @@ class PresentationProjector:
     def snapshot(self):
         stats=dict(self.stats)
         stats.update(retained_groups=len(self.groups),
-                     hidden_events=stats['hidden_by_priority']+stats['hidden_by_cooldown'],
+                     hidden_events=stats['hidden_by_priority']+stats['hidden_by_cooldown']+stats.get('hidden_local_diagnostic',0),
                      note='展示过滤/聚合数量，不是信号准确率；原始事件由调用方完整保留。')
         return {'groups':deepcopy(list(self.groups)),'stats':stats,
                 'config':{'min_priority':self.min_priority,'cooldown_minutes':self.cooldown_minutes},
