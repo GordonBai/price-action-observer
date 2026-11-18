@@ -16,6 +16,7 @@ from typing import Callable
 
 from .core import Bar
 from .provider_indicators import INDICATORS, acquire_indicators, validate_indicator_request
+from .timeframes import daily_close
 
 HISTORICALS = "get_equity_historicals"
 QUOTES = "get_equity_quotes"
@@ -220,7 +221,7 @@ class RobinhoodProvider:
         if accept_unknown:
             source += ":accept_unknown"
         minutes = INTERVAL_MINUTES.get(interval)
-        duration = timedelta(days=1) if minutes is None else timedelta(minutes=minutes)
+        duration = None if minutes is None else timedelta(minutes=minutes)
         bars, raw, batches = [], [], []
         provenance = {}
         counts = ("received", "emitted", "interpolated", "invalid", "incomplete",
@@ -285,13 +286,19 @@ class RobinhoodProvider:
                                 continue
                         else:
                             local["not_interpolated"] += 1
-                        if opened.second or opened.microsecond or (bounds == "regular" and item.get("session") != "reg"):
+                        if (opened.second or opened.microsecond
+                                or (minutes is None and (opened.hour or opened.minute))
+                                or (bounds == "regular" and item.get("session") != "reg")):
                             local["invalid"] += 1
                             continue
-                        if cutoff - opened < duration:
+                        try:
+                            closed = daily_close(opened.date().isoformat()) if minutes is None else opened + duration
+                        except ValueError:
+                            local["invalid"] += 1
+                            continue
+                        if cutoff < closed:
                             local["incomplete"] += 1
                             continue
-                        closed = opened + duration
                         try:
                             normalized = _normalized(symbol, minutes or "D", closed, item, source)
                         except (ValueError, OverflowError):

@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 import math
 import re
 
-from .timeframes import daily_session
+from .timeframes import daily_close
 
 INDICATORS = "get_equity_technical_indicators"
 INTRADAY_SECONDS = {"15second": 15, "30second": 30, "minute": 60, "5minute": 300,
@@ -219,8 +219,9 @@ def acquire_indicators(provider, symbols, start, end, indicator_type, interval, 
                     continue
                 try:
                     if interval == "day":
-                        closed = opened + timedelta(days=1)
-                        daily_session(closed)
+                        if opened.hour or opened.minute or opened.second or opened.microsecond:
+                            raise ValueError("daily indicator point must open at UTC midnight")
+                        closed = daily_close(opened.date().isoformat())
                     else:
                         if opened.microsecond or opened.second % min(seconds, 60):
                             raise ValueError("indicator point is not aligned to native interval")

@@ -81,7 +81,7 @@ class IndicatorTests(unittest.TestCase):
                                   {"begins_at": "2026-11-14T00:00:00Z", "value": 70},
                                   {"begins_at": "2026-11-17T00:00:00Z", "value": 80}])
         r = provider.indicators(["SOXL"], "2026-11-13", "2026-11-17", "rsi", "day")
-        self.assertEqual([p["time"] for p in r.series[0]["points"]], ["2026-11-14T00:00:00+00:00"])
+        self.assertEqual([p["time"] for p in r.series[0]["points"]], ["2026-11-13T21:00:00+00:00"])
         self.assertEqual(r.quality["invalid"], 1)
         self.assertEqual(r.quality["incomplete"], 1)
         self.assertEqual(self.calls[0][1]["start_time"], "2026-11-13T00:00:00Z")

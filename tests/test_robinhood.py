@@ -167,7 +167,7 @@ class RobinhoodTests(unittest.TestCase):
                                            "2026-11-18T00:00:00Z", interval="day")
         self.assertEqual(len(result.raw_records),4)
         self.assertEqual((result.quality["invalid"],result.quality["incomplete"]), (2,1))
-        self.assertEqual([(b.timeframe,b.time) for b in result.bars],[("D","2026-11-17T00:00:00+00:00")])
+        self.assertEqual([(b.timeframe,b.time) for b in result.bars],[("D","2026-11-16T21:00:00+00:00")])
         self.assertEqual(result.bar_provenance[0]["session_date"],"2026-11-16")
         with self.assertRaisesRegex(ValueError, "regular"):
             self.provider(stub).fetch(["SOXL"],"2026-11-15T00:00:00Z","2026-11-18T00:00:00Z",interval="day",bounds="extended")

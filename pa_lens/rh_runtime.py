@@ -117,17 +117,19 @@ def aggregate_fifteen(result):
 
 
 def next_poll_delay(now, interval, settle_seconds=10):
-    """Next 09:30 ET-anchored intraday grid plus settling delay.
+    """Next 09:30 ET-anchored intraday grid or XNYS daily session close plus settling delay.
 
-    Daily grid is the conservative next-UTC-midnight availability, not 16:00 ET.
     This scheduling helper does not assert a provider's actual publication latency.
     """
     import math
     if not math.isfinite(settle_seconds) or not 0<=settle_seconds<=300:
         raise ValueError('settle seconds must be 0..300')
-    seconds=86400 if interval=='day' else 900 if interval=='15minute' else INTERVAL_MINUTES[interval]*60
+    if interval=='day':
+        from .timeframes import next_daily_close
+        return next_daily_close(now,settle_seconds)
+    seconds=900 if interval=='15minute' else INTERVAL_MINUTES[interval]*60
     stamp=now.timestamp()
-    origin=0 if interval=='day' else now.astimezone(ZoneInfo('America/New_York')).replace(hour=9,minute=30,second=0,microsecond=0).timestamp()
+    origin=now.astimezone(ZoneInfo('America/New_York')).replace(hour=9,minute=30,second=0,microsecond=0).timestamp()
     boundary=origin+(math.floor((stamp-origin-settle_seconds)/seconds)+1)*seconds+settle_seconds
     return max(0,boundary-stamp)
 

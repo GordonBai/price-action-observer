@@ -113,6 +113,8 @@ class RuntimeTests(unittest.TestCase):
         from pa_lens.rh_runtime import next_poll_delay
         self.assertEqual(next_poll_delay(datetime(2026,11,17,14,45,5,tzinfo=timezone.utc),'15minute',10),5)
         self.assertEqual(next_poll_delay(datetime(2026,11,17,14,45,10,tzinfo=timezone.utc),'15minute',10),900)
+        self.assertEqual(next_poll_delay(datetime(2026,11,17,21,0,5,tzinfo=timezone.utc),'day',10),5)
+        self.assertEqual(next_poll_delay(datetime(2026,11,17,21,0,10,tzinfo=timezone.utc),'day',10),86400)
 
     def test_fifteen_missing_cross_session_and_unknown(self):
         from pa_lens.rh_runtime import aggregate_fifteen
