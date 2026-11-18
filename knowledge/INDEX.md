@@ -243,8 +243,9 @@ Always In描述若必须选多空时较有把握的方向，不是强迫一直�
 
 - Context: 失败事件本身改变背景，而非删除原信号。
 - Counterexample: 一次短反向运动不必然确认原突破失败。
-- Code status (audited snapshot): `not_implemented`. Invalidation events exist, but no linked failed-failure/resumption detector.
+- Code status (audited snapshot): `partial_engineering_approximation`. Frozen ten-bar range breakout, failed close back inside, then restored close beyond same boundary; fifteen-bar expiry.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 保存原事件和修订链，每次变化只用当时证据。
 - Unresolved: 失败触发及最大观察期。
 - Source: [Price Action Trading Terms Glossary](https://www.brookstradingcourse.com/price-action-trading-terms-glossary/), Failed failure definition; role: `concept_support`; review: `indexed_substantive_text`. Reviewed at: 2026-11-18. Review scope: Double top/bottom and failed-failure definitions. Limit: Not a complete page or chart review.. License: `publicly_accessible_not_assumed_open_license`
@@ -258,8 +259,9 @@ Always In描述若必须选多空时较有把握的方向，不是强迫一直�
 
 - Context: 与三角形、区间、失败突破可重叠。
 - Counterexample: 晚期盘整也可能继续有效延续，不能仅靠位置确认final。
-- Code status (audited snapshot): `not_implemented`. No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.
+- Code status (audited snapshot): `experimental_candidate_only`. Ten-bar directional proxy followed by five-bar compact consolidation; continuation/failure stages remain candidates; trend maturity and complete variants not established.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 先发布可能末旗，事后最终标签不得当实时先知。
 - Unresolved: 结构成熟度、确认和失败变体仍需图例。
 - Source: [12A Market Cycle official public sample](https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/), Captions 39:26–42:04; sampled frame 41:00; role: `concept_support`; review: `full_captions_sampled_frames`. Reviewed at: 2026-11-18. Review scope: All 725 official English VTT cues, 00:00:01.898–00:43:24.810, read. 13 sampled stable frames: 02:30,07:10,10:40,14:10,18:20,21:20,24:30,28:20,31:10,35:00,38:20,41:00,43:00.. Limit: No audio heard; not continuous video review. Frames between sample points and animation stages not fully reviewed. Review by project research contributor; not transcribed anew here.. License: `publicly_accessible_not_assumed_open_license`
@@ -331,8 +333,9 @@ SOXL追求指数单日300%表现，不保证实现，也不等于任意分钟或
 
 - Context: 局部反转与更高尺度趋势可能并存。
 - Counterexample: 强卖压后第一反弹可能仍是小反转。
-- Code status (audited snapshot): `not_implemented`. No dedicated detector for this concept in the audited code snapshot.
+- Code status (audited snapshot): `experimental_candidate_only`. Trend-line break, later retest and local reverse close evidence only; all MTR development stages remain candidates, not complete MTR confirmation.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 发布候选与确认分别记录，不后移历史前提。
 - Unresolved: 完整结构要求与尺度阈值尚待核。
 - Source: [Patterns on the Open (2018)](https://www.brookstradingcourse.com/wp-content/uploads/2018/10/181030-futuresio-Patterns-on-the-Open-Al-Brooks.pdf), PDF pages 26,34; role: `concept_support`; review: `full_text_and_page_images`. Reviewed at: 2026-11-18. Review scope: PDF pages 1–38 read; charts visually inspected. Limit: Companion video not reviewed; primarily gap-down examples.. License: `publicly_accessible_not_assumed_open_license`
@@ -380,8 +383,9 @@ MM是一组投射方法，包括区间、突破高度和等长腿，不是唯一
 
 - Context: 大跌后强反弹并深度回补支持双向区间情景，而非必然牛趋势。
 - Counterexample: 作者承认某反向stop-entry是否有足够空间不知道；系统也应允许unknown。
-- Code status (audited snapshot): `not_implemented`. New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.
+- Code status (audited snapshot): `experimental_observation_only`. Microgap held/filled/expired development only; neither held nor filled is a definitive measuring/exhaustion classification.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 区分首次缺口观察和后续分类确认时刻。
 - Causal constraint: 只用可测跟随、重叠、回补代理；不把强弱交易者心理当观测事实。
 - Unresolved: 缺口类型、回补深度及反向可交易空间的客观定义。
@@ -426,8 +430,9 @@ MM是一组投射方法，包括区间、突破高度和等长腿，不是唯一
 
 - Context: 明确观察、确认和执行周期。
 - Counterexample: 小周期Always In改变可仍处于大周期宽通道。
-- Code status (audited snapshot): `not_implemented`. No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.
+- Code status (audited snapshot): `partial_engineering_approximation`. Complete RTH-aligned five one-minute bars aggregated to five-minute OHLCV; no incomplete window, higher-timeframe semantic detector or conflict policy.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 高周期完成条只能在其收盘后引用；未完成值另标临时，禁止回放用最终OHLC。
 - Unresolved: 时间对齐、会话边界和跨周期冲突政策。
 - Source: [12A Market Cycle official public sample](https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/), Captions 00:00–02:38,07:41–11:17,14:43–26:23; role: `concept_support`; review: `full_captions_sampled_frames`. Reviewed at: 2026-11-18. Review scope: All 725 official English VTT cues, 00:00:01.898–00:43:24.810, read. 13 sampled stable frames: 02:30,07:10,10:40,14:10,18:20,21:20,24:30,28:20,31:10,35:00,38:20,41:00,43:00.. Limit: No audio heard; not continuous video review. Frames between sample points and animation stages not fully reviewed. Review by project research contributor; not transcribed anew here.. License: `publicly_accessible_not_assumed_open_license`
@@ -440,8 +445,9 @@ MM是一组投射方法，包括区间、突破高度和等长腿，不是唯一
 
 - Context: 样片偏开盘1–2小时，必须保留时段和两侧测试顺序。
 - Counterexample: 任意晚盘宽摆动或首18条区间破位，不能自动称为同一种BOM。
-- Code status (audited snapshot): `not_implemented`. New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.
+- Code status (audited snapshot): `experimental_candidate_only`. First two hours with successive intraday-high and intraday-low rejections on separate bars; neutral candidate only.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 先有当时可见日高/日低的测试反转证据，不用最终全天极值。
 - Unresolved: 两侧反转确认、窗口与缺失数据规则。
 - Source: [2017 Trading the Open public sample](https://www.brookstradingcourse.com/free-sample-price-action-trading-videos/), Captions 16:56–23:29; sampled frame 18:25; role: `concept_support`; review: `full_captions_sampled_frames`. Reviewed at: 2026-11-18. Review scope: All 727 official English VTT cues read, 00:00:01.940–00:47:25.776. Sampled frames: 18:25, 36:05, 41:45.. Limit: No audio heard; no continuous video review. Intervening frames, animations and uncaptained audio not reviewed. Public excerpt only, not full paid course chapter. Review recorded by project research contributor.. License: `publicly_accessible_not_assumed_open_license`
@@ -454,8 +460,9 @@ MM是一组投射方法，包括区间、突破高度和等长腿，不是唯一
 
 - Context: 昨高昨低、均线和较大周期支撑构成背景。
 - Counterexample: 强开盘方向不等于最终全天走势。
-- Code status (audited snapshot): `not_implemented`. No dedicated detector for this concept in the audited code snapshot.
+- Code status (audited snapshot): `experimental_candidate_only`. Actual New York open coverage required; first-five-minute directional range and later opposite close. Candidate/invalidation only, not gap-down course variants.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 固定交易时区/时段；不能用收盘终态回填开盘标签。
 - Causal constraint: 日线OHLC不能唯一决定高低先后，不得用收盘后的日线形状回灌早盘。ES历史81条设定不能移植为SOXL常规盘条数。
 - Unresolved: 不同市场开盘窗口与数据权限。
@@ -669,8 +676,9 @@ HH/HL/LH/LL是相对先前摆动点的结构关系。
 
 - Context: 解释依赖时间尺度、回撤及交易成本。
 - Counterexample: 官方图例中强微通道也出现重大反转。
-- Code status (audited snapshot): `not_implemented`. No dedicated detector for this concept in the audited code snapshot.
+- Code status (audited snapshot): `experimental_candidate_only`. Eight-close directional/limited-adverse-move proxy; not all tight channels or cost-aware tradability.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 通道线及尺度在当时冻结；不得用后面转折重画。
 - Unresolved: 紧通道与微通道的独立规则、成本敏感性。
 - Source: [China Futures Daily Interview Part 1](https://www.brookstradingcourse.com/ask-al/china-futures-daily-interview-part-1/), Q2/Q4/Q5; role: `concept_support`; review: `official_transcript_read`. Reviewed at: 2026-11-18. Review scope: Q1–7 full text. Limit: Audio not heard; underlying charts not checked.. License: `publicly_accessible_not_assumed_open_license`
@@ -716,8 +724,9 @@ HH/HL/LH/LL是相对先前摆动点的结构关系。
 
 - Context: 锚点、尺度和是否允许异常点影响线的位置。
 - Counterexample: 越线可只带来区间而非完全趋势反转。
-- Code status (audited snapshot): `not_implemented`. No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.
+- Code status (audited snapshot): `partial_engineering_approximation`. Frozen two confirmed-pivot trend line plus break/retest observations; no automatic parallel channel or optimal discretionary line selection.
 - Claim layers: summary = source-grounded paraphrase; engineering guidance = project synthesis; unresolved items = unverified questions.
+- Code: [pa_lens/structures.py](../pa_lens/structures.py), `StructureDetector.update`; snapshot hash recorded in JSON.
 - Causal constraint: 保存每一版本锚点和生成时间；重画线不能改写过去信号。
 - Unresolved: 可重复选点与极端点处理。
 - Source: [Brooks glossary: selected foundational entries](https://www.brookstradingcourse.com/price-action-trading-terms-glossary/), trend line; trend channel line; overshoot; role: `concept_support`; review: `selected_page_sections`. Reviewed at: 2026-11-18. Review scope: Official HTML fetched and selected definitions read: always in, breakout/mode, follow-through, ii/ioi, micro/tight channel, pullback, ledge, tight trading range, swing high/low and HH/HL/LH/LL, trend/channel lines, wedge and three pushes.. Limit: Not a full-page or audiovisual review; definitions do not establish complete algorithms. Historical point/tick examples not transferred to SOXL.. License: `publicly_accessible_not_assumed_open_license`

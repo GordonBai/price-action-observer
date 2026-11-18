@@ -64,7 +64,7 @@ The panel defaults to structural changes: priority 3, 15-minute same-family/stat
 Replay accepts canonical JSONL/CSV or the documented Alpaca-export format (`timestamp` = bar OPEN, converted by +1 minute; `feed` retained in source identity). Inputs must be chronological and a single stream. Missing/invalid input is rejected or explicitly flagged, never silently sorted or filled.
 
 ### Optional completed-bar provider adapter
-An Alpaca REST polling adapter and same-process panel are implemented: see [connection instructions and unverified acceptance steps](docs/LIVE_ADAPTER.md). Credentials are absent in this environment; no live entitlement or deployment is claimed. Development now follows the curated knowledge base; full MTR, final flags, multi-timeframe and other subjective families remain explicitly incomplete.
+An Alpaca REST adapter and a saved-connector import bridge are implemented: see [connection instructions](docs/LIVE_ADAPTER.md). Actual bounded IEX closed-bar collection is documented in [live validation](docs/reports/LIVE_CONNECTOR_VALIDATION.md); recent SIP was denied. No autonomous deployment or uptime is claimed. Nine more conceptual subsets now include MTR development, final-flag candidates and completed 5-minute aggregates, not complete discretionary recognition: see [exact definitions](docs/STRUCTURES.md).
 
 ## Architecture
 ```mermaid
@@ -96,12 +96,12 @@ flowchart LR
 Add a source-grounded rule card first: definition, context, first-observable time, engineering thresholds, counterexamples and expected tests. Then add failing synthetic tests, implement incrementally, verify prefix invariance and update the coverage matrix. Keep overlapping labels linked to shared evidence instead of multiplying confidence. Do not copy code with incompatible licenses or future-looking behavior.
 
 ## Verification and limits
-See the [observation audit protocol](docs/AUDIT_PROTOCOL.md) and [coverage](docs/COVERAGE.md) and [v0.3 results](docs/reports/OBSERVATION_VALIDATION.md). The older [validation report](docs/reports/VALIDATION.md) is a historical v0.1 policy experiment, not current observation accuracy. Passing tests and subsequent price direction are not independent pattern ground truth.
+See the [observation audit protocol](docs/AUDIT_PROTOCOL.md) and [coverage](docs/COVERAGE.md) and [v0.4 results](docs/reports/V04_VALIDATION.md) ([historical v0.3](docs/reports/OBSERVATION_VALIDATION.md)). The older [validation report](docs/reports/VALIDATION.md) is a historical v0.1 policy experiment, not current observation accuracy. Passing tests and subsequent price direction are not independent pattern ground truth.
 
 | Claim | Boundary |
 |---|---|
 | Causal rules | Confirmed pivots need future right-side bars before publication, never before |
-| Real-time capable ingestion | Local transport only; no continuously deployed feed or uptime claim |
+| Real-time capable ingestion | Bounded actual IEX collection; no continuously deployed feed or uptime claim |
 | November 17 SOXL | Previously inspected known case, **not blind out-of-sample** |
 | Three-month SOXL | 66 sessions of retrospective observation replay; calendar samples await independent labels |
 | Costs | Scenario assumptions unless historical quotes/actual executions available |

@@ -83,14 +83,86 @@ class Poller:
         source='alpaca:'+self.feed.feed+':raw'
         streams=self.journal.snapshot(now)['streams']
         matching=[s for s in streams if s['symbol']==self.symbol and s['timeframe']=='1' and s['source']==source]
-        if matching:start=parse_time(matching[0]['last_bar_close'])-timedelta(minutes=1)
-        inserted=duplicates=skipped=0
-        for row in self.feed.fetch(self.symbol,start.isoformat(),(now-timedelta(seconds=3)).isoformat()):
-            bar=normalize_alpaca(self.symbol,row,self.feed.feed,now,rth_only=self.rth_only)
-            if bar is None:skipped+=1;continue
-            outcome=self.journal.ingest(asdict(bar))
-            if outcome['duplicate']:duplicates+=1
-            else:inserted+=1
+        if matching:start=min(start,parse_time(matching[0]['last_bar_close'])-timedelta(minutes=1))
+        inserted=duplicates=skipped=quarantined=rows=0
+        try:
+            for row in self.feed.fetch(self.symbol,start.isoformat(),(now-timedelta(seconds=3)).isoformat()):
+                rows+=1
+                bar=normalize_alpaca(self.symbol,row,self.feed.feed,now,rth_only=self.rth_only)
+                if bar is None:skipped+=1;continue
+                outcome=self.journal.ingest_observation(asdict(bar))
+                if outcome.get('quarantined'):quarantined+=1
+                elif outcome['duplicate']:duplicates+=1
+                else:inserted+=1
+        except (FeedError,ValueError) as exc:
+            self.journal.record_transport(source,self.symbol,'error',now.isoformat(),rows,error='provider_or_ingestion_validation_error')
+            raise FeedError('Provider/ingestion validation failed; original journal preserved; inspect audit and retry.') from None
+        self.journal.record_transport(source,self.symbol,'success' if rows else 'empty',now.isoformat(),rows)
         health=self.journal.health(now)
-        return {'inserted':inserted,'duplicates':duplicates,'skipped':skipped,'feed':self.feed.feed,'source':source,
+        return {'inserted':inserted,'duplicates':duplicates,'quarantined':quarantined,'skipped':skipped,'feed':self.feed.feed,'source':source,
                 'checked_at':now.isoformat(),'health':health,'notice':'Historical/recent REST bars, not tick streaming; verify entitlement and latency separately.'}
+
+
+def connector_bars(payload,symbol,expected_feed,now,*,retrieved_at):
+    """Validate a saved get_stock_bars *structured* connector result.
+
+    This is an import bridge, not connector authentication or a scheduler. Feed
+    must be explicit; connector adjustment is unknown and must never be labeled
+    raw. Caller stores the request/response and receipt time privately. Entire
+    batch is validated before returning, then normal Journal rules still apply.
+    """
+    from dataclasses import replace
+    if expected_feed not in ('iex','sip','delayed_sip'):raise ValueError('explicit supported connector feed required')
+    if not isinstance(payload,dict) or payload.get('tool')!='get_stock_bars' or 'error' in payload:
+        raise ValueError('expected successful get_stock_bars structured result')
+    if retrieved_at.tzinfo is None or retrieved_at.utcoffset() is None:raise ValueError('retrieved_at must be timezone aware')
+    validation_time=min(now,retrieved_at)
+    request=payload.get('request',{})
+    if request.get('feed')!=expected_feed or request.get('timeframe')!='1Min' or request.get('symbols')!=[symbol]:
+        raise ValueError('connector request provenance does not match symbol/feed/1Min')
+    rows=payload.get('bars',{}).get(symbol)
+    if not isinstance(rows,list):raise ValueError('connector bars missing')
+    result=[];last=None
+    for row in rows:
+        if not isinstance(row,dict) or row.get('symbol')!=symbol:raise ValueError('mixed or missing connector symbol')
+        try:
+            stamp=parse_time(row['timestamp'])
+            if last is not None and stamp<=last:raise ValueError('connector rows must be strictly ordered without revisions')
+            last=stamp
+            raw={a:row[b] for a,b in [('t','timestamp'),('o','open'),('h','high'),('l','low'),('c','close'),('v','volume')]}
+        except (KeyError,TypeError) as exc:raise ValueError('invalid connector fields') from exc
+        bar=normalize_alpaca(symbol,raw,expected_feed,validation_time)
+        if bar is not None:result.append(replace(bar,source='alpaca-connector:'+expected_feed+':adjustment_unverified'))
+    return result
+
+
+def connector_import_main(argv=None):
+    """One-shot local import, not a daemon; obtains no credentials."""
+    import argparse
+    from pathlib import Path
+    from .service import Journal
+    parser=argparse.ArgumentParser(description='Import a saved Alpaca connector result; does NOT schedule or authenticate a feed')
+    parser.add_argument('input',type=Path)
+    parser.add_argument('--feed',choices=('iex','sip','delayed_sip'),required=True)
+    parser.add_argument('--symbol',default='SOXL')
+    parser.add_argument('--captured-at',required=True,help='conservative pre-request clock, ISO timezone required; not later import time')
+    parser.add_argument('--db',type=Path,required=True)
+    args=parser.parse_args(argv)
+    try:
+        now=datetime.now(timezone.utc)
+        captured=parse_time(args.captured_at)
+        if captured>now:raise ValueError('capture clock is in the future')
+        bars=connector_bars(json.loads(args.input.read_text()),args.symbol,args.feed,now,retrieved_at=captured)
+        args.db.parent.mkdir(parents=True,exist_ok=True)
+        journal=Journal(args.db)
+        try:
+            outcomes=[journal.ingest_observation(asdict(bar)) for bar in bars]
+            print(json.dumps({'accepted_closed_rows':len(bars),'inserted':sum(not x['duplicate'] and not x.get('quarantined') for x in outcomes),
+                'duplicates':sum(x['duplicate'] and not x.get('quarantined') for x in outcomes),'quarantined':sum(bool(x.get('quarantined')) for x in outcomes),'captured_at':captured.isoformat(),
+                'checked_at':now.isoformat(),'feed':args.feed,'health':journal.health(now),
+                'mode':'one_shot_connector_import_not_continuous_service'},ensure_ascii=False))
+        finally:journal.close()
+    except (OSError,ValueError) as ex:parser.error(str(ex))
+
+
+if __name__=='__main__':connector_import_main()

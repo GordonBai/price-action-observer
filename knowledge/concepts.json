@@ -393,7 +393,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
           }
         ],
         "limits": "Strict DB/DT and range-breakout events carry context/trigger/stop; not a general Brooks setup model.",
@@ -460,7 +460,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine._context",
-            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
           }
         ],
         "limits": "20-bar directional efficiency >0.55 is a coarse heuristic, not the full cycle.",
@@ -538,7 +538,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
           }
         ],
         "limits": "Strict delayed-pivot, tolerance/rebound and neckline-close variant only; not all Brooks DB flags/tests.",
@@ -606,7 +606,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
           }
         ],
         "limits": "Mirror strict DB heuristic; not full Brooks double-top coverage.",
@@ -680,7 +680,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update; project_equal_leg",
-            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
           }
         ],
         "limits": "Range/DB height projections and manual AB=CD helper only; no automatic gap-MM or anchor hierarchy.",
@@ -1227,7 +1227,7 @@
         "紧通道与微通道的独立规则、成本敏感性。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "experimental_candidate_only",
       "sources": [
         {
           "source_id": "brooks-china-1",
@@ -1257,9 +1257,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Eight-close directional/limited-adverse-move proxy; not all tight channels or cost-aware tradability.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -1364,7 +1370,7 @@
         "45:19–45:28字幕high指代含混，未核音，不编码收盘目标。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "experimental_candidate_only",
       "sources": [
         {
           "source_id": "brooks-open",
@@ -1383,9 +1389,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Actual New York open coverage required; first-five-minute directional range and later opposite close. Candidate/invalidation only, not gap-down course variants.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -1560,7 +1572,7 @@
         "完整结构要求与尺度阈值尚待核。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "experimental_candidate_only",
       "sources": [
         {
           "source_id": "brooks-open",
@@ -1579,9 +1591,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "No dedicated detector for this concept in the audited code snapshot.",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Trend-line break, later retest and local reverse close evidence only; all MTR development stages remain candidates, not complete MTR confirmation.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -1620,7 +1638,7 @@
         "失败触发及最大观察期。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "partial_engineering_approximation",
       "sources": [
         {
           "source_id": "brooks-glossary",
@@ -1639,9 +1657,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "Invalidation events exist, but no linked failed-failure/resumption detector.",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Frozen ten-bar range breakout, failed close back inside, then restored close beyond same boundary; fifteen-bar expiry.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -2019,7 +2043,7 @@
         "两侧反转确认、窗口与缺失数据规则。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "experimental_candidate_only",
       "sources": [
         {
           "source_id": "brooks-2017-open-sample",
@@ -2033,9 +2057,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "First two hours with successive intraday-high and intraday-low rejections on separate bars; neutral candidate only.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -2074,7 +2104,7 @@
         "缺口类型、回补深度及反向可交易空间的客观定义。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "experimental_observation_only",
       "sources": [
         {
           "source_id": "brooks-42a-sample",
@@ -2089,9 +2119,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "New research concept only; no dedicated implementation. Existing range/attempt observations must not be represented as this full concept.",
+        "status": "experimental_observation_only",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Microgap held/filled/expired development only; neither held nor filled is a definitive measuring/exhaustion classification.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -2270,7 +2306,7 @@
           {
             "path": "pa_lens/core.py",
             "symbols": "Engine.update",
-            "sha256": "8e89a5523a95ea9035be2c6456d23b650f6bea564d88446e003685ef15d4a95d"
+            "sha256": "08c79964515ef9247d3e41db3a4718115a0558cb49c766f98979edb001e53fcf"
           },
           {
             "path": "pa_lens/advanced.py",
@@ -2624,7 +2660,7 @@
         "结构成熟度、确认和失败变体仍需图例。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "experimental_candidate_only",
       "sources": [
         {
           "source_id": "brooks-12a",
@@ -2638,9 +2674,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "status": "experimental_candidate_only",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Ten-bar directional proxy followed by five-bar compact consolidation; continuation/failure stages remain candidates; trend maturity and complete variants not established.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -2680,7 +2722,7 @@
         "时间对齐、会话边界和跨周期冲突政策。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "partial_engineering_approximation",
       "sources": [
         {
           "source_id": "brooks-12a",
@@ -2695,9 +2737,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Complete RTH-aligned five one-minute bars aggregated to five-minute OHLCV; no incomplete window, higher-timeframe semantic detector or conflict policy.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },
@@ -2737,7 +2785,7 @@
         "可重复选点与极端点处理。"
       ],
       "evidence_status": "source_reviewed_unvalidated_on_soxl",
-      "implementation_status": "not_implemented",
+      "implementation_status": "partial_engineering_approximation",
       "sources": [
         {
           "source_id": "brooks-glossary-selected",
@@ -2751,9 +2799,15 @@
       ],
       "code_mapping": {
         "audited_at": "2026-11-18",
-        "status": "not_implemented",
-        "files": [],
-        "limits": "No dedicated source-faithful detector audited for this concept. Existing context/pivot/range features are not full implementation.",
+        "status": "partial_engineering_approximation",
+        "files": [
+          {
+            "path": "pa_lens/structures.py",
+            "symbols": "StructureDetector.update",
+            "sha256": "81600bed63f622f0a341bb65f69527f273d3f3bf177c087731b847398548181f"
+          }
+        ],
+        "limits": "Frozen two confirmed-pivot trend line plus break/retest observations; no automatic parallel channel or optimal discretionary line selection.",
         "coverage_reference": "docs/COVERAGE.md",
         "snapshot_only": true
       },

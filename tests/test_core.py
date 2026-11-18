@@ -117,7 +117,7 @@ class AdvancedIntegrationTests(unittest.TestCase):
         for b in bars([15,14,13,14,14.5,13.5,14]):out+=e.update(b)
         events=[x for x in out if x['family']=='high_attempt']
         self.assertEqual([x['attempt_label'] for x in events],['H1','H2'])
-        self.assertEqual(events[-1]['rule_version'],'pa-lens/0.3.0')
+        self.assertEqual(events[-1]['rule_version'],'pa-lens/0.4.0')
         self.assertIsNone(events[-1]['probability'])
     def test_gap_resets_advanced_episodes(self):
         from test_advanced import bars

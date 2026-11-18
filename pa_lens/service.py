@@ -24,7 +24,7 @@ MAX_BODY = 65536
 MAX_STREAMS = 64
 # Pin the engine sources loaded by this process, not unrelated documentation commits.
 _code_hash = hashlib.sha256()
-for _name in ('core.py', 'advanced.py', 'observations.py', 'explanations.py', 'presentation.py'):
+for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py'):
     _path = Path(__file__).with_name(_name)
     if _path.exists():
         _code_hash.update(_name.encode() + b'\0' + _path.read_bytes())
@@ -112,6 +112,16 @@ class Journal:
             symbol TEXT NOT NULL, timeframe TEXT NOT NULL, source TEXT NOT NULL,
             time TEXT NOT NULL, payload TEXT NOT NULL, received_at TEXT NOT NULL,
             UNIQUE(symbol,timeframe,source,time))''')
+        self.conn.execute('''CREATE TABLE IF NOT EXISTS observation_audit (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL, timeframe TEXT NOT NULL, source TEXT NOT NULL,
+            time TEXT NOT NULL, kind TEXT NOT NULL, original TEXT, incoming TEXT NOT NULL,
+            received_at TEXT NOT NULL, last_received_at TEXT NOT NULL,
+            fingerprint TEXT NOT NULL UNIQUE, after_bar_seq INTEGER NOT NULL, occurrences INTEGER NOT NULL DEFAULT 1)''')
+        self.conn.execute('''CREATE TABLE IF NOT EXISTS transport (
+            source TEXT NOT NULL, symbol TEXT NOT NULL, timeframe TEXT NOT NULL,
+            status TEXT NOT NULL, checked_at TEXT NOT NULL, rows INTEGER NOT NULL,
+            error TEXT, PRIMARY KEY(source,symbol,timeframe))''')
         self.conn.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
         identity = {'config_hash': Engine(config).config_hash,
                     'engine_version': ENGINE_VERSION, 'core_sha256': CORE_SHA256,
@@ -132,10 +142,20 @@ class Journal:
         return {'engine': Engine(self.config), 'bars': deque(maxlen=240),
                 'display':PresentationProjector(**self.display_config), 'events': deque(maxlen=200), 'bar_count': 0, 'received_at': None}
 
-    def _apply(self, data, received_at):
+    def _apply(self, data, received_at, bar_seq=None):
         key = (data['symbol'], data['timeframe'], data['source'])
         stream = self.streams.setdefault(key, self._new())
         events = stream['engine'].update(Bar.from_dict(data))
+        # Do not mutate engine-owned or already published historical objects.
+        if bar_seq is None:
+            bar_seq = self.conn.execute('SELECT COALESCE(MAX(seq),0)+1 FROM bars').fetchone()[0]
+        known_at_receipt = self.conn.execute(
+            'SELECT 1 FROM observation_audit WHERE symbol=? AND timeframe=? AND source=? AND after_bar_seq<? LIMIT 1',
+            (*key, bar_seq)).fetchone()
+        if known_at_receipt:
+            events = [{**event, 'data_quality': 'known_revision_or_late_data',
+                       'interpretation_basis': 'first_received_bars_not_recomputed'}
+                      for event in events]
         stream['bars'].append(data)
         stream['events'].extend(events)
         stream['display'].update(events)
@@ -145,8 +165,8 @@ class Journal:
 
     def _rebuild(self):
         self.streams = {}
-        for text, received_at in self.conn.execute('SELECT payload,received_at FROM bars ORDER BY seq'):
-            self._apply(json.loads(text), received_at)
+        for seq, text, received_at in self.conn.execute('SELECT seq,payload,received_at FROM bars ORDER BY seq'):
+            self._apply(json.loads(text), received_at, seq)
 
     def ingest(self, payload, webhook=False):
         bar = normalize(payload, webhook)
@@ -183,10 +203,115 @@ class Journal:
                 raise
             return {'ok': True, 'duplicate': False, 'events': events}
 
+    def ingest_observation(self, payload):
+        """Feed ingestion: quarantine valid corrections without rewriting the tape.
+
+        Quarantine is sticky across restarts. Review/replay corrected data in a
+        separate journal; this API never automatically resolves an audit entry.
+        Only the normalized bar whitelist is persisted, never transport secrets.
+        """
+        bar = normalize(payload)
+        data = {key: _iso(getattr(bar, key)) for key in
+                ('symbol','timeframe','time','open','high','low','close','volume','source')}
+        data['time'] = _iso(_datetime(data['time']))
+        now_dt = datetime.now(timezone.utc)
+        if (_datetime(data['time']) - now_dt).total_seconds() > 5:
+            raise ValueError('future close time rejected; submit only completed bars')
+        key = (data['symbol'], data['timeframe'], data['source'])
+        with self.lock:
+            existing = self.conn.execute(
+                'SELECT payload FROM bars WHERE symbol=? AND timeframe=? AND source=? AND time=?',
+                (*key, data['time'])).fetchone()
+            original = json.loads(existing[0]) if existing else None
+            last = self.conn.execute(
+                'SELECT time FROM bars WHERE symbol=? AND timeframe=? AND source=? ORDER BY seq DESC LIMIT 1',
+                key).fetchone()
+            kind = ('revision' if existing and original != data else
+                    'late_arrival' if not existing and last and
+                    _datetime(data['time']) <= _datetime(last[0]) else None)
+            if kind is None:
+                result = self.ingest(data)
+                quality = self._data_quality(key)
+                return {**result, 'quarantined': False,
+                        'data_quality': quality['interpretation_status']}
+            audit = dict(symbol=data['symbol'], timeframe=data['timeframe'], source=data['source'],
+                         time=data['time'], kind=kind, original=original, incoming=data)
+            canonical = json.dumps(audit, sort_keys=True, separators=(',', ':'), allow_nan=False)
+            fingerprint = hashlib.sha256(canonical.encode()).hexdigest()
+            now = _iso(now_dt)
+            prior = self.conn.execute(
+                'SELECT id,received_at,occurrences FROM observation_audit WHERE fingerprint=?',
+                (fingerprint,)).fetchone()
+            try:
+                if prior:
+                    self.conn.execute(
+                        'UPDATE observation_audit SET occurrences=occurrences+1,last_received_at=? WHERE fingerprint=?',
+                        (now, fingerprint))
+                    audit_id, received_at, count = prior
+                    count += 1
+                else:
+                    cursor = self.conn.execute(
+                        'INSERT INTO observation_audit(symbol,timeframe,source,time,kind,original,incoming,received_at,last_received_at,fingerprint,after_bar_seq) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+                        (*key, data['time'], kind,
+                         json.dumps(original, sort_keys=True) if original is not None else None,
+                         json.dumps(data, sort_keys=True, allow_nan=False), now, now, fingerprint,
+                         self.conn.execute('SELECT COALESCE(MAX(seq),0) FROM bars').fetchone()[0]))
+                    audit_id, received_at, count = cursor.lastrowid, now, 1
+                self.conn.commit()
+            except Exception:
+                self.conn.rollback()
+                raise
+            audit.update(id=audit_id, received_at=received_at, last_received_at=now,
+                         fingerprint=fingerprint, occurrences=count)
+            return {'ok': True, 'quarantined': True, 'duplicate': bool(prior),
+                    'events': [], 'audit': audit, 'data_quality': 'known_revision_or_late_data'}
+
+    def record_transport(self, source, symbol, status, checked_at, rows, error=None, timeframe='1'):
+        """Record response health separately from quote freshness. Never store exceptions."""
+        if status not in ('success', 'empty', 'error'):
+            raise ValueError('invalid transport status')
+        if isinstance(rows, bool) or not isinstance(rows, int) or rows < 0:
+            raise ValueError('invalid transport rows')
+        for value in (source, symbol, timeframe):
+            if not isinstance(value, str) or not value or len(value)>128 or any(ord(c)<32 for c in value):
+                raise ValueError('invalid transport stream')
+        checked_at = _iso(_datetime(_iso(checked_at)))
+        with self.lock:
+            self.conn.execute(
+                """INSERT INTO transport(source,symbol,timeframe,status,checked_at,rows,error)
+                   VALUES(?,?,?,?,?,?,?) ON CONFLICT(source,symbol,timeframe) DO UPDATE SET
+                   status=excluded.status,checked_at=excluded.checked_at,rows=excluded.rows,error=excluded.error
+                   WHERE excluded.checked_at>=transport.checked_at""",
+                (source,symbol,timeframe,status,checked_at,rows,'transport_error' if status=='error' else None))
+            self.conn.commit()
+
+    def _transport(self):
+        return [dict(source=row[0],symbol=row[1],timeframe=row[2],status=row[3],
+                     checked_at=row[4],last_response_rows=row[5],error=row[6])
+                for row in self.conn.execute(
+                    'SELECT source,symbol,timeframe,status,checked_at,rows,error FROM transport ORDER BY source,symbol,timeframe')]
+
+    def _data_quality(self, key=None):
+        where = ' WHERE symbol=? AND timeframe=? AND source=?' if key else ''
+        rows = self.conn.execute(
+            'SELECT kind,COUNT(*),SUM(occurrences) FROM observation_audit' + where + ' GROUP BY kind',
+            key or ()).fetchall()
+        counts = {kind: count for kind, count, _ in rows}
+        total = sum(counts.values())
+        observations = sum(count for _, _, count in rows)
+        return {'interpretation_status': 'known_revision_or_late_data' if total else 'no_known_quarantine',
+                'interpretation_basis': 'first_received_bars_not_recomputed',
+                'status': 'DATA_REVIEW_REQUIRED' if total else 'NO_QUARANTINED_OBSERVATIONS',
+                'quarantined_count': total, 'revision_count': counts.get('revision', 0),
+                'late_arrival_count': counts.get('late_arrival', 0),
+                'observation_count': observations, 'duplicate_count': observations-total,
+                'policy': 'preserve_original_tape; review_corrected_history_separately'}
+
     def snapshot(self, now=None):
         now = now or datetime.now(timezone.utc)
         with self.lock:
             result = []
+            transport = self._transport()
             for (symbol, timeframe, source), stream in self.streams.items():
                 last = stream['bars'][-1]
                 age = (now - _datetime(last['time'])).total_seconds()
@@ -195,21 +320,31 @@ class Journal:
                 freshness = 'FUTURE' if age < -5 else ('STALE' if age > max(120, seconds*2) else 'RECENT')
                 warm = state.get('bars_in_segment', 0) >= stream['engine'].config.min_history
                 readiness = freshness if freshness != 'RECENT' else ('READY_FOR_RESEARCH' if warm else 'WARMUP')
-                result.append(dict(symbol=symbol, timeframe=timeframe, source=source,
+                quality = self._data_quality((symbol, timeframe, source))
+                if any(t['status']=='error' and (t['symbol'],t['timeframe'],t['source'])==(symbol,timeframe,source) for t in transport):
+                    readiness = 'TRANSPORT_ERROR'
+                if quality['quarantined_count']:
+                    readiness = 'DATA_REVIEW_REQUIRED'
+                result.append(dict(data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
                     bar_count=stream['bar_count'], bars=list(stream['bars']), events=list(stream['events']),
                     display=stream['display'].snapshot(), state=state, last_bar_close=last['time'], received_at=stream['received_at'],
                     age_seconds=round(age, 2), freshness=freshness, readiness=readiness, ready=readiness == 'READY_FOR_RESEARCH'))
             ready = bool(result) and all(s['ready'] for s in result)
             readiness = 'WAITING_FOR_DATA' if not result else ('READY_FOR_RESEARCH' if ready else 'NOT_READY')
-            return {'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
+            quality = self._data_quality()
+            if any(t['status']=='error' for t in transport):
+                ready, readiness = False, 'TRANSPORT_ERROR'
+            if quality['quarantined_count']:
+                ready, readiness = False, 'DATA_REVIEW_REQUIRED'
+            return {'transport': transport, 'data_quality': quality, 'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
                     'rule_identity': dict(self.identity), 'streams': result,
-                    'notice': '接收器不是行情供应商；RECENT仅表示提交的时间戳接近当前，不代表已验证实时报价。收市时历史bar会显示STALE。'}
+                    'notice': '存在隔离修订或迟到数据时，解释基于首次接收版K线且未重算，须另库复核，不应依赖其结构判断。接收器不是行情供应商；RECENT仅表示提交的时间戳接近当前，不代表已验证实时报价。收市时历史bar会显示STALE。'}
 
     def health(self, now=None):
         result = self.snapshot(now)
-        streams = [{key: stream[key] for key in ('symbol','timeframe','source','bar_count','last_bar_close','received_at','age_seconds','freshness','readiness','ready')} for stream in result['streams']]
+        streams = [{key: stream[key] for key in ('symbol','timeframe','source','bar_count','last_bar_close','received_at','age_seconds','freshness','readiness','ready','data_quality')} for stream in result['streams']]
         status = 'WAITING_FOR_DATA' if not streams else ('RECENT_INPUT' if all(s['freshness']=='RECENT' for s in streams) else 'STALE')
-        return {'status': status, 'live_verified': False, 'ready': result['ready'], 'readiness': result['readiness'], 'rule_identity': result['rule_identity'], 'streams': streams, 'notice': result['notice']}
+        return {'transport': result['transport'], 'data_quality': result['data_quality'], 'status': status, 'live_verified': False, 'ready': result['ready'], 'readiness': result['readiness'], 'rule_identity': result['rule_identity'], 'streams': streams, 'notice': result['notice']}
 
     def close(self):
         with self.lock:

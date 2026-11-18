@@ -67,3 +67,42 @@ class RedirectSecurityTests(unittest.TestCase):
             self.assertEqual(leaked,[])
         finally:
             for server in (origin,target):server.shutdown();server.server_close()
+
+class RevisionPollingTests(unittest.TestCase):
+    def test_revision_quarantined_and_new_bar_progresses_with_overlap(self):
+        from pa_lens.service import Journal
+        import copy
+        class Fake:
+            feed='iex'
+            rows=[{'t':f'2026-11-17T14:{m}:00Z','o':10,'h':11,'l':9,'c':10,'v':1} for m in ['30','31','32']]
+            starts=[]
+            def fetch(self,symbol,start,end):self.starts.append(start);return iter(self.rows)
+        f=Fake();j=Journal(':memory:');p=Poller(f,j,'SOXL')
+        try:
+            p.poll(datetime(2026,11,17,14,34,tzinfo=timezone.utc))
+            f.rows=copy.deepcopy(f.rows);f.rows[0]['c']=10.5
+            f.rows.append(dict(f.rows[-1],t='2026-11-17T14:33:00Z'))
+            result=p.poll(datetime(2026,11,17,14,35,tzinfo=timezone.utc))
+            self.assertEqual(result['inserted'],1);self.assertEqual(result['quarantined'],1)
+            self.assertLessEqual(datetime.fromisoformat(f.starts[-1]),datetime(2026,11,17,14,30,tzinfo=timezone.utc))
+            self.assertFalse(result['health']['ready'])
+            self.assertEqual(j.snapshot()['streams'][0]['bars'][0]['close'],10)
+        finally:j.close()
+
+    def test_transport_error_and_empty_are_distinct_from_bar_freshness(self):
+        from pa_lens.service import Journal
+        class Fake:
+            feed='iex';fail=False
+            def fetch(self,*args):
+                if self.fail:raise FeedError('fake provider error')
+                return iter([])
+        f=Fake();j=Journal(':memory:');p=Poller(f,j,'SOXL')
+        try:
+            result=p.poll(datetime(2026,11,17,14,34,tzinfo=timezone.utc))
+            self.assertEqual(result['inserted'],0)
+            self.assertEqual(result['health']['transport'][0]['status'],'empty')
+            f.fail=True
+            with self.assertRaises(FeedError):p.poll(datetime(2026,11,17,14,35,tzinfo=timezone.utc))
+            self.assertEqual(j.health()['transport'][0]['status'],'error')
+            self.assertFalse(j.health()['ready'])
+        finally:j.close()

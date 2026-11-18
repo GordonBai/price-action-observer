@@ -7,9 +7,10 @@ import json
 import math
 from .advanced import AdvancedDetector
 from .observations import ObservationDetector
+from .structures import StructureDetector
 from .explanations import ground_event, KNOWLEDGE_VERSION
 
-ENGINE_VERSION = "0.3.0"
+ENGINE_VERSION = "0.4.0"
 
 
 def parse_time(value):
@@ -91,6 +92,7 @@ class Engine:
         self._range_latch=None
         self.advanced=AdvancedDetector(self.config)
         self.observations=ObservationDetector(self.config)
+        self.structures=StructureDetector(self.config)
         self._detector_parents={}
 
     def _emit(self,family,status,direction,bar,anchors=None,evidence=None,**values):
@@ -117,6 +119,7 @@ class Engine:
         self.bars=[]; self.pivots={'low':[],'high':[]};self.pending=[];self.projections=[];self._range_latch=None
         self.advanced=AdvancedDetector(self.config)
         self.observations=ObservationDetector(self.config)
+        self.structures=StructureDetector(self.config)
         self._detector_parents={}
 
     def _atr(self):
@@ -225,15 +228,15 @@ class Engine:
                 else:self.projections.append(event)
                 self._range_latch=direction
             elif not direction:self._range_latch=None
-        for a in self.advanced.update(bar,self._context(),atr)+self.observations.update(bar,self._context(),atr):
+        for a in self.advanced.update(bar,self._context(),atr)+self.observations.update(bar,self._context(),atr)+self.structures.update(bar,self._context(),atr):
             extras={k:v for k,v in a.items() if k not in ('id','family','status','direction','observed_at','confirmed_at','anchors','evidence','probability','rule_version','explanation')}
             if extras.get('parent_id'):
-                extras['parent_id']=self._detector_parents.pop(extras['parent_id'],extras['parent_id'])
+                extras['parent_id']=self._detector_parents.get(extras['parent_id'],extras['parent_id'])
             event=self._emit(a['family'],a['status'],a['direction'],bar,a['anchors'],a['evidence'],advanced_rule_version=a['rule_version'],**extras)
             event['explanation']=a['explanation']
-            if a['family']=='three_push_wedge' and a['status']=='candidate':
+            if a['family'] in ('three_push_wedge','failed_failure','opening_reversal','mtr_development','final_flag_development') and a['status']=='candidate':
                 self._detector_parents[a['id']]=event['id']
-                while len(self._detector_parents)>20:self._detector_parents.pop(next(iter(self._detector_parents)))
+                while len(self._detector_parents)>128:self._detector_parents.pop(next(iter(self._detector_parents)))
         return list(self._batch)
 
     def snapshot(self):

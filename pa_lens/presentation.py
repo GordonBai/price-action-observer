@@ -11,7 +11,7 @@ import math
 
 VERSION='presentation/0.1'
 _BASIC={'doji','trend_bar','gap_open','body_gap','micro_gap','micro_channel','inside_bar','outside_bar'}
-_KEY={'double_bottom','double_top','three_push_wedge','range_breakout','breakout_observation','failed_breakout','measured_move','data_gap','session_reset'}
+_KEY={'double_bottom','double_top','three_push_wedge','range_breakout','breakout_observation','failed_breakout','failed_failure','opening_reversal','measured_move','data_gap','session_reset'}
 
 
 def _time(value):

@@ -43,14 +43,14 @@ function render(){
  if(!snapshot)return;
  const stream=snapshot.streams[Number($('streams').value)||0],state=stream?.state||{};
  $('notice').textContent=snapshot.notice||'研究模式；尚未验证实时报价。';
- $('status').textContent=stream?stream.freshness+' · '+stream.symbol+' / '+stream.timeframe+'m':'WAITING_FOR_DATA';
+ $('status').textContent=stream?stream.freshness+' · '+(stream.readiness||'UNKNOWN_READINESS')+' · '+stream.symbol+' / '+stream.timeframe+'m':'WAITING_FOR_DATA';
  $('meta').textContent=stream?'来源: '+stream.source+' | 累计bar: '+stream.bar_count+' | 最近收盘: '+stream.last_bar_close+' | age: '+stream.age_seconds+'s':'';
  const events=stream?.events||[],display=stream?.display;
  const available=[...events,...(display?.groups||[]).flatMap(g=>g.events||[])];
  if(focusEvent&&!available.some(e=>e.id===focusEvent.id))focusEvent=null;
  $('display-stats').textContent=display?label({说明:'仅展示层降频；未删除原始审计事件。raw_events/displayed_events/displayed_groups及隐藏计数是截至最新快照的累计值；retained_groups仅为保留窗口，原始表也仅近200条，不是完整审计轨迹。统计不是事件时刻的识别准确率。',stats:display.stats,config:display.config,presentation_version:display.presentation_version}):'该快照没有服务端展示分组，暂显示原始事件。';
  updateOptions('family-filter',available.map(e=>e.family));updateOptions('status-filter',available.map(e=>e.status));
- const summary={};for(const k of ['context','bars_in_segment','gap_count','config_hash','knowledge_version','mode','coverage'])summary[k]=state[k]??null;
+ const summary={data_quality:stream?.data_quality??null,transport:(snapshot.transport||[]).filter(t=>t.source===stream?.source&&t.symbol===stream?.symbol&&t.timeframe===stream?.timeframe)};for(const k of ['context','bars_in_segment','gap_count','config_hash','knowledge_version','mode','coverage'])summary[k]=state[k]??null;
  // Snapshot context is not historical state. Hide it when focusing an earlier event.
  $('context').textContent=focusEvent?label({说明:'仅展示该事件当时保存的语境，不使用最新快照推断历史。',context:focusEvent.context??'事件未保存语境',knowledge_version:focusEvent.knowledge_version??null}):stream?label(summary):'等待数据';
  const bars=(stream?.bars||[]).filter(b=>!focusEvent||Date.parse(b.time)<=Date.parse(focusEvent.observed_at));

@@ -1,4 +1,4 @@
-# Observation coverage and timing contract · v0.3
+# Observation coverage and timing contract · v0.4
 
 44 curated knowledge cards are not 44 completed detectors. These are original, deterministic engineering approximations, not official Brooks algorithms or empirically calibrated probabilities. Source-reading provenance and limits remain in `knowledge/concepts.json`. No full-course/video mastery is claimed.
 
@@ -20,8 +20,11 @@
 | Source grounding | IDs, summaries, counterexamples, source links, knowledge hash on events | Citation identifies conceptual basis, not endorsement of thresholds |
 | Audit | Known-case replay, frozen weekly calendar sample, event anchors and separately marked posthoc paths | Human labels initially blank; precision/recall/insight accuracy unknown |
 
+## Added structured subsets
+See [all nine mappings and ten event families](STRUCTURES.md): tight-channel proxy, frozen pivot trend lines, candidate MTR development, failed-failure close sequence, gap development, opening two-sided mode, opening reversal candidate, completed 5-minute data product and candidate final-flag development. These are not nine new proven trading setups.
+
 ## Explicitly incomplete
-Full MTR trend-line break/retest models, final flags, failed failures, second-leg traps, parabolic acceleration geometry, opening-reversal regimes, broad channels, automatic support/resistance selection, multi-timeframe confirmation and all higher-order variants are not claimed. Risk/position-management, execution and product-boundary cards remain explanations or methodology, not auto-trading policies.
+Complete discretionary MTR/final flags, generalized failed failures, second-leg traps, parabolic acceleration geometry, full opening-reversal regimes, broad channels, automatic support/resistance selection, multi-timeframe directional confirmation and all higher-order variants are not claimed. Risk/position-management, execution and product-boundary cards remain explanations or methodology, not auto-trading policies.
 
 ## Causality and versioning
 Each event has `observed_at`, status, anchors, code/config version, knowledge hash, source references and uncertainty. Right-confirmed pivots retain their occurrence times but are published only after confirmation. Future bars cannot rewrite an earlier emitted event. OHLC ambiguity cannot be resolved by assuming intrabar order. A local structural confirmation proves only the specified closed-bar condition.

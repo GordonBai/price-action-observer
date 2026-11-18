@@ -84,3 +84,10 @@ class IncrementalPresentationTests(unittest.TestCase):
         p=PresentationProjector()
         with self.assertRaises(ValueError):p.update([event(3),event(2)])
         self.assertEqual(p.snapshot()['stats']['raw_events'],0)
+
+class NewStructurePriorityTests(unittest.TestCase):
+    def test_confirmed_failed_failure_is_key_change_but_candidate_not(self):
+        events=[event(0,'failed_failure','candidate'),event(1,'failed_failure','confirmed')]
+        result=summarize_events(events,min_priority=3)
+        self.assertEqual(result['stats']['displayed_events'],1)
+        self.assertEqual(result['groups'][0]['events'][0]['status'],'confirmed')

@@ -45,8 +45,8 @@ def main():
             try:
                 while True:
                     try:print(json.dumps(poller.poll(),ensure_ascii=False),flush=True)
-                    except FeedError as ex:
-                        print(json.dumps({'status':'FEED_ERROR','error':str(ex),'live_verified':False}),file=sys.stderr,flush=True)
+                    except (FeedError, ValueError) as ex:
+                        print(json.dumps({'status':'FEED_ERROR','error':'Provider/ingestion validation failed; original journal preserved; inspect local audit and retry.','live_verified':False}),file=sys.stderr,flush=True)
                         if args.once:raise ValueError(str(ex))
                     if args.once:break
                     time.sleep(args.poll_seconds)
