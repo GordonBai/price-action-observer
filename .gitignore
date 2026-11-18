@@ -8,3 +8,5 @@ local_data/
 *.sqlite3-shm
 .env
 .env.*
+
+.superpowers/
