@@ -51,3 +51,21 @@ independently checked the New York fall DST transition (01:30 EDT then 01:30 EST
 at the corresponding distinct UTC instants). No release blocker remained.
 The real PTY observations above are the implementation team's capture, not a
 second independent market-data run.
+
+## New York display correction
+
+A user noticed the original short pull/receipt strings were unlabeled UTC.
+The human TUI and text displays now consistently use full New York dates with
+EST/EDT: current clock, pull start, bar acquisition receipt, bar availability,
+native effective time, and PA observation time. `Bars received` specifically
+means bar-acquisition receipt, not native receipt or exchange trade time.
+Stored and JSONL timestamps remain UTC. Daily bars retain their conservative
+availability meaning; the displayed evening time is not the exchange close.
+
+A second real NVDA one-minute extended-hours PTY test completed two rounds,
+17:39:26–17:39:34 EST. The final bar showed 17:39:00 EST, while pull start and
+bar receipt showed 17:39:34 EST. Both rounds ended normally. Tests cover the
+DST repeated hour, UTC/NY date differences, and daily availability labeling.
+Final correction verification: 316 tests, 315 passed and one optional skip,
+rerun independently with the same outcome. The reviewer separately checked
+spring-forward and fall-back transitions and the daily availability label.

@@ -15,15 +15,15 @@ _SEEN_LIMIT = 4096
 _NEW_YORK = ZoneInfo("America/New_York")
 
 
-def _utc(value):
-    return parse_time(value).isoformat().replace("+00:00", "Z")
+def _ny(value):
+    return parse_time(value).astimezone(_NEW_YORK).strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
 def _period(value):
     return value + "m" if value.isdigit() else value
 
 
-def _native_lines(context):
+def _native_lines(context, *, daily=False):
     lines = [f"  Native context: {context.get('status', 'UNAVAILABLE')} (warmup/source quality unknown)"]
     if context.get("reason"):
         lines.append(f"    {context['reason']}")
@@ -33,7 +33,8 @@ def _native_lines(context):
             continue
         if row.get("status") == "AVAILABLE_SOURCE_UNKNOWN":
             relation = f" (close {row['relation']})" if row.get("relation") else ""
-            lines.append(f"    {name}={row.get('value')}{relation}; effective {_utc(row['effective_at'])}")
+            label = "available at" if daily else "effective"
+            lines.append(f"    {name}={row.get('value')}{relation}; {label} {_ny(row['effective_at'])}")
         else:
             suffix = f": {row['reason']}" if row.get("reason") else ""
             lines.append(f"    {name}: {row.get('status', 'UNAVAILABLE')}{suffix}")
@@ -67,7 +68,7 @@ class TerminalMonitor:
     def view(self, snapshot, receipts, *, now, source, fixed_end=False, native_enabled=True):
         """Project detached journal state once for either layout."""
         self.round += 1
-        line = (f"[{_utc(now)}] Robinhood read-only monitor | poll {self.round} | "
+        line = (f"[{_ny(now)}] Robinhood read-only monitor | poll {self.round} | "
                 f"{source} | research only")
         lines = [line + (" | FIXED END (not following live)" if fixed_end else "")]
         panels = {key: [] for key in ("MARKET", "NATIVE INDICATORS", "PRICE ACTION", "DATA QUALITY")}
@@ -118,12 +119,15 @@ class TerminalMonitor:
                      if value and value != "NO_QUARANTINED_OBSERVATIONS"]
             if source.endswith(":accept_unknown") and "DATA_QUALITY_UNKNOWN" not in flags:
                 flags.append("DATA_QUALITY_UNKNOWN")
-            lines.append(f"  Latest journaled {_period(stream['timeframe'])} closed bar {_utc(close)} "
+            daily = stream["timeframe"] == "D"
+            bar_label = "daily bar available at" if daily else f"{_period(stream['timeframe'])} closed bar"
+            market_label = "Daily bar available at" if daily else f"{_period(stream['timeframe'])} CLOSED"
+            lines.append(f"  Latest journaled {bar_label} {_ny(close)} "
                          f"| O={last['open']} H={last['high']} L={last['low']} C={last['close']} V={last['volume']}")
             status = f"  {freshness} | age={stream['age_seconds']:.0f}s | {stream['readiness']}"
             market_row = len(panels["MARKET"]) + 1
-            panels["MARKET"].extend((f"{symbol}  {_period(stream['timeframe'])} CLOSED",
-                                     f"{_utc(close)}  |  {freshness}",
+            panels["MARKET"].extend((f"{symbol}  {market_label}",
+                                     f"{_ny(close)}  |  {freshness}",
                                      f"O {last['open']}   H {last['high']}",
                                      f"L {last['low']}   C {last['close']}   V {last['volume']}"))
             if flags:
@@ -154,9 +158,10 @@ class TerminalMonitor:
             panels["PRICE ACTION"].append(f"{symbol}  {context}")
             native = stream.get("native_interpretation", {})
             native_rows = []
+            effective_at = []
             native_header = None
             if native_enabled:
-                lines.extend(_native_lines(native))
+                lines.extend(_native_lines(native, daily=daily))
                 panels["NATIVE INDICATORS"].append(f"{symbol}  {native.get('status', 'UNAVAILABLE')}")
                 native_header = len(panels["NATIVE INDICATORS"]) - 1
                 for key, name in (("ema20", "EMA20"), ("rsi14", "RSI14")):
@@ -164,9 +169,15 @@ class TerminalMonitor:
                     if entry.get("status") == "AVAILABLE_SOURCE_UNKNOWN":
                         relation = f" | close {entry['relation']}" if entry.get("relation") else ""
                         native_rows.append((len(panels["NATIVE INDICATORS"]), name))
+                        effective_at.append(entry["effective_at"])
                         panels["NATIVE INDICATORS"].append(f"{name} {entry.get('value')}{relation}")
                     else:
                         panels["NATIVE INDICATORS"].append(f"{name}  {entry.get('status', 'UNAVAILABLE')}")
+                for timestamp in dict.fromkeys(effective_at):
+                    if daily:
+                        panels["NATIVE INDICATORS"].extend(("Available at:", _ny(timestamp)))
+                    else:
+                        panels["NATIVE INDICATORS"].append(f"Effective {_ny(timestamp)}")
                 panels["NATIVE INDICATORS"].append("Warmup / source quality unknown")
                 reasons = list(dict.fromkeys(r for r in (
                     native.get("reason"), native.get("ema20", {}).get("reason"),
@@ -185,7 +196,7 @@ class TerminalMonitor:
                 groups = stream["display"]["groups"]
                 prior = next((group["events"][-1] for group in reversed(groups) if group["events"]), None)
                 if prior:
-                    observed_at = _utc(prior["observed_at"])
+                    observed_at = _ny(prior["observed_at"])
                     description = f"{prior['family']} / {prior['status']}"
                     lines.append(f"  HISTORY (not new) {observed_at} | {description}")
                     panels["PRICE ACTION"].extend(("HISTORY · not new",
@@ -219,7 +230,7 @@ class TerminalMonitor:
                 panels["PRICE ACTION"].append("No new key PA event")
             event_warning = " [DATA_QUALITY_UNKNOWN; exploratory]" if "DATA_QUALITY_UNKNOWN" in flags else ""
             for event in current:
-                lines.append(f"  NEW PA{event_warning} {_utc(event['observed_at'])} | "
+                lines.append(f"  NEW PA{event_warning} {_ny(event['observed_at'])} | "
                              f"{event['family']} / {event['status']} / {event.get('direction', 'neutral')} "
                              f"| id={event['id']}")
                 if event.get("explanation"):
@@ -230,7 +241,7 @@ class TerminalMonitor:
                 tag = " [UNKNOWN]" if event_warning else ""
                 panels["PRICE ACTION"].extend((f"NEW PA{tag} · {latest['family']}{extra}",
                     f"{latest['status']} / {latest.get('direction', 'neutral')}",
-                    _utc(latest["observed_at"])))
+                    _ny(latest["observed_at"])))
                 if latest.get("explanation"):
                     panels["PRICE ACTION"].append(latest["explanation"])
             if held:
@@ -240,7 +251,7 @@ class TerminalMonitor:
             if not current:
                 history()
         return {"text": "\n".join(lines), "panels": panels, "round": self.round,
-                "timestamp": _utc(now), "source": source, "fixed_end": fixed_end,
+                "timestamp": parse_time(now).isoformat(), "source": source, "fixed_end": fixed_end,
                 "risk": risk, "symbol_count": len(self.symbols), "clock_slots": tuple(clock_slots),
                 "receipt": max(recorded_receipts, default=None)}
 
@@ -338,7 +349,7 @@ def format_tui(view, *, width, height, color=False):
     width, height = usable, height - 1
     header = f"PA OBSERVER  /  LIVE MONITOR   •   POLL {view['round']}"
     kind = "FIXED END" if view["fixed_end"] else "READ-ONLY"
-    subtitle = f"{view['timestamp']}   {kind}   {view['source']}"
+    subtitle = f"{_ny(view['timestamp'])}   {kind}   {view['source']}" if not clock_rows else ""
     if clock_rows:
         subtitle = f"{clock_rows[0]}   {kind}"
     lines = [paint(_take(header, width)[0], "1;36"), *list(_wrap(subtitle, width))[:2],
@@ -379,7 +390,7 @@ def clock_frame(view, now, phase, pull_started):
         age = (now - close).total_seconds()
         freshness = "FUTURE" if age < -5 else "STALE" if age > limit else "RECENT"
         stale += int(freshness != "RECENT")
-        walls["MARKET"][market_row] = f"{_utc(close)}  |  {freshness}"
+        walls["MARKET"][market_row] = f"{_ny(close)}  |  {freshness}"
         walls["DATA QUALITY"][quality_row] = f"{symbol}  {freshness} | age {age:.0f}s"
         if freshness != "RECENT" and readiness_row is not None:
             walls["DATA QUALITY"][readiness_row] = "Snapshot no longer current"
@@ -395,13 +406,11 @@ def clock_frame(view, now, phase, pull_started):
            if timestamp else "pending")
 
     def short(value):
-        return parse_time(value).strftime("%H:%M:%S") if value else "—"
+        return _ny(value) if value else "—"
 
-    ny = now.astimezone(_NEW_YORK)
-    ny_label = ny.strftime("%m-%d %H:%M:%S %Z" if ny.date() != now.date() else "%H:%M:%S %Z")
     view["clock_rows"] = (
-        f"UTC NOW {now:%Y-%m-%d %H:%M:%S}  |  NY {ny_label}  |  {phase}",
-        f"Pull start {short(pull_started)} · Receipt {short(view.get('receipt'))} · Snapshot {age}",
+        f"NY NOW {_ny(now)}  |  {phase}",
+        f"Pull start {short(pull_started)} · Bars received {short(view.get('receipt'))} · Snapshot {age}",
     )
     return view
 

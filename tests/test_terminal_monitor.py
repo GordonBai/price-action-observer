@@ -42,7 +42,7 @@ class TerminalMonitorTests(unittest.TestCase):
         bootstrap = self.render(monitor, [stream(T10, events=[event("old-id", T10)])], T10)
         self.assertIn("BASELINE", bootstrap)
         self.assertIn("O=10 H=12 L=9 C=11 V=100", bootstrap)
-        self.assertIn(T10, bootstrap)
+        self.assertIn("2026-11-18 10:10:00 EST", bootstrap)
         self.assertNotIn("old-id", bootstrap)
         new = event("new-id", T11)
         second = self.render(monitor, [stream(T11, events=[event("old-id", T10), new, new])], T11)
@@ -226,9 +226,9 @@ class TerminalMonitorTests(unittest.TestCase):
         wall = dt("2026-11-18T15:12:01Z")
         live = clock_frame(view, wall, "PULLING", dt(T12))
         text = format_tui(live, width=120, height=28)
-        for label in ("UTC NOW 2026-11-18 15:12:01", "Pull start 15:12:00",
-                      "Receipt 15:10:06", "Snapshot 121s old", "STALE", T10,
-                      "NY 10:12:01 EST", "EMA20  STALE", SRC):
+        for label in ("NY NOW 2026-11-18 10:12:01 EST", "Pull start 2026-11-18 10:12:00 EST",
+                      "Bars received 2026-11-18 10:10:06 EST", "Snapshot 121s old", "STALE",
+                      "2026-11-18 10:10:00 EST", "EMA20  STALE", SRC):
             self.assertIn(label, text)
         self.assertNotIn("READY_FOR_RESEARCH", text)
         self.assertNotIn("123.456", text)
@@ -267,7 +267,7 @@ class TerminalMonitorTests(unittest.TestCase):
         in_flight = []
         for _ in range(8):
             candidate = updates.get(timeout=2)
-            if "PULLING" in candidate and T10 in candidate:
+            if "PULLING" in candidate and "2026-11-18 10:10:00 EST" in candidate:
                 in_flight.append(candidate)
             if len(in_flight) == 2:
                 break
@@ -277,3 +277,45 @@ class TerminalMonitorTests(unittest.TestCase):
         self.assertFalse(clock.running)
         self.assertIn("SOXL", out.getvalue().split("\x1b[2J")[-1])
         self.assertIn("Snapshot", out.getvalue().split("\x1b[2J")[-1])
+
+    def test_dates_roll_back_to_new_york_and_dst_fold_retains_zone_labels(self):
+        from pa_lens.terminal_monitor import clock_frame, format_tui
+        close = "2026-07-02T00:01:00Z"
+        wall = dt("2026-07-02T00:01:10Z")
+        native = {"status": "AVAILABLE_SOURCE_UNKNOWN", "ema20": {
+            "status": "AVAILABLE_SOURCE_UNKNOWN", "value": "12.50", "effective_at": close}}
+        snapshot = {"streams": [stream(close, events=[event("p", close)], native=native)],
+                    "acquisitions": [{"id": 2, "source": SRC, "received_at": "2026-07-02T00:01:06Z"}]}
+        monitor = TerminalMonitor(["SOXL"])
+        view = monitor.view(snapshot, [(("SOXL",), {"acquisition_id": 2})], now=wall, source=SRC)
+        rendered = format_tui(clock_frame(view, wall, "WAITING", dt(close)), width=120, height=31)
+        for label in ("NY NOW 2026-07-01 20:01:10 EDT", "Pull start 2026-07-01 20:01:00 EDT",
+                      "Bars received 2026-07-01 20:01:06 EDT", "Effective 2026-07-01 20:01:00 EDT",
+                      "HISTORY"):
+            self.assertIn(label, rendered)
+        self.assertNotIn("2026-07-02", rendered)
+        self.assertIn("effective 2026-07-01 20:01:00 EDT", view["text"])
+        self.assertIn("HISTORY (not new) 2026-07-01 20:01:00 EDT", view["text"])
+        for utc, tz in (("2026-11-01T05:30:00Z", "EDT"), ("2026-11-01T06:30:00Z", "EST")):
+            moment = dt(utc)
+            folded = clock_frame(view, moment, "PULLING", moment)
+            self.assertIn(f"NY NOW 2026-11-01 01:30:00 {tz}", folded["clock_rows"][0])
+            self.assertIn(f"Pull start 2026-11-01 01:30:00 {tz}", folded["clock_rows"][1])
+
+    def test_daily_display_time_is_availability_not_actual_session_close(self):
+        from pa_lens.terminal_monitor import clock_frame, format_tui
+        boundary = "2026-11-18T00:00:00Z"
+        native = {"status": "AVAILABLE_SOURCE_UNKNOWN", "ema20": {
+            "status": "AVAILABLE_SOURCE_UNKNOWN", "value": "12.50", "effective_at": boundary}}
+        daily = stream(boundary, native=native)
+        daily["timeframe"] = "D"
+        now = dt(boundary)
+        view = TerminalMonitor(["SOXL"]).view({"streams": [daily]}, [], now=now, source=SRC)
+        rendered = format_tui(clock_frame(view, now, "WAITING", now), width=80, height=24)
+        self.assertIn("Daily bar available at", rendered)
+        self.assertIn("2026-11-17 19:00:00 EST", rendered)
+        self.assertIn("daily bar available at 2026-11-17 19:00:00 EST", view["text"])
+        self.assertIn("Available at:", rendered)
+        self.assertEqual(view["panels"]["NATIVE INDICATORS"][3:5],
+                         ["Available at:", "2026-11-17 19:00:00 EST"])
+        self.assertIn("available at 2026-11-17 19:00:00 EST", view["text"])

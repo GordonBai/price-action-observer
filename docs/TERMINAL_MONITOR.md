@@ -14,8 +14,8 @@ Use `--count 2` for a short check, `--once` for one snapshot, or Ctrl-C to
 stop continuous polling. The TUI has panels for **Market**, **Native
 Indicators**, **Price Action**, and **Data Quality**. It redraws at the current
 terminal size every second, using a compact stack on narrower terminals. The
-UTC and New York clocks keep moving during Robinhood requests and between polls.
-Pull start, last recorded acquisition receipt, last completed snapshot age, and
+New York wall clock keeps moving during Robinhood requests and between polls.
+Pull start, last recorded bar acquisition receipt, last completed snapshot age, and
 bar close are distinct. Aging a snapshot can mark the last bar and matching
 native values stale, but it never creates or recomputes observations. History
 shown in the Price Action panel is labeled as not new this scan. Terminals
@@ -28,12 +28,13 @@ existing machine-readable acquisition/native records. Piped output defaults to
 JSONL. `fetch-robinhood` is unchanged. Use a separate journal for a replay or
 another monitor process; two writers cannot use the same journal.
 
-Each symbol reports the latest **accepted, journaled** closed bar in UTC and its
+Each symbol reports the latest **accepted, journaled** closed bar in New York time (EST or EDT) and its
 O/H/L/C/volume, timestamp age, acquisition quality and research readiness. If a
 poll has no usable new evidence, the prior bar is labeled as retained. A
 successful provider call does not make a previous close fresh. This is not a
 tick stream; off-session timestamps can legitimately be stale. Regular daily
-timestamps are the conservative next-UTC-midnight availability boundary.
+timestamps represent the conservative next-UTC-midnight availability boundary,
+converted to New York time for display. JSONL and stored timestamps remain UTC.
 
 The PA context is the first-received candle-based state, not a prediction.
 The first usable scan per symbol establishes a baseline; it never announces the
