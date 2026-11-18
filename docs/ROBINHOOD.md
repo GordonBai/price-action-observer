@@ -10,7 +10,8 @@ initiate login, accept approvals, or use another provider.
 
 ## Request and receipt contract
 
-- The only callable tools are `get_equity_historicals` and `get_equity_quotes`.
+- The only callable tools are `get_equity_historicals`, `get_equity_quotes`, and
+  `get_equity_technical_indicators`.
   Quotes are original provider records and never substitute for bars.
 - Historical requests carry an explicit RFC3339 start and end, symbol list,
   canonical interval, bounds, and adjustment type. Defaults are `minute`,
@@ -123,7 +124,7 @@ fail the whole fetch, rather than treating missing results as a successful empty
 feed. Raw quote evidence is separate and never patches OHLCV.
 
 Local EMA20, Wilder RSI14 and engine mean-TR volatility are displayed separately
-from provider data; provider technical indicators are not requested. Historical
+from provider data; native technical indicators are optional independent snapshots. Historical
 event focus hides current indicator values instead of leaking future state.
 Pinned calendar package version and all acquisition/analytics sources participate
 in journal identity; migrate to a new DB after semantic code changes.
@@ -150,3 +151,116 @@ An explicit older `--start` intentionally changes coverage and is best replayed
 in a new research database; original-tape journals do not retroactively insert
 older history. This prevents scheduler-induced false late-arrival alerts without
 silently dropping real provider corrections or late holes.
+
+## Native technical indicators
+
+The observer also permits the read-only `get_equity_technical_indicators` tool.
+It is a separate provider snapshot, not a replacement for bars or local EMA/RSI.
+Use one type per call, with up to ten symbols per batch. Larger symbol lists are
+split without changing the request window. Time windows are never split and
+stitched: the server calculation and warmup can change if the start changes.
+The provider enforces its bar budget including warmup. If a window is rejected,
+try a shorter window or a coarser native interval, not automatic time splitting.
+
+| Types | Optional parameters (provider defaults) | Output fields |
+| --- | --- | --- |
+| EMA, SMA (`ema`, `sma`) | `period=9` | `value` |
+| `rsi`, `roc`, `cci`, `atr`, `mfi` | `period=14` | `value` |
+| `williams_r`, `adx` | `period=10` | `value` |
+| `momentum` | `period=12` | `value` |
+| `donchian_channels` | `period=20` | `lower`, `middle`, `upper` |
+| `bollinger_bands` | `period=20`, `num_std=2` | `lower`, `middle`, `upper` |
+| `keltner_channels` | `period=20`, `multiplier=2` | `lower`, `middle`, `upper` |
+| `macd` | `fast_period=12`, `slow_period=26`, `signal_period=9` | `macd`, `signal`, `histogram` |
+| `supertrend` | `period=10`, `multiplier=3` | `value`, `direction` |
+| `vwap`, `obv` | none | `value` |
+| `pivot_points` | `method=classic` (only method) | `pivot`, `r1`–`r3`, `s1`–`s3` |
+
+Native intervals are `15second`, `30second`, `minute`, `5minute`, `10minute`,
+`30minute`, `hour`, `4hour`, `day`, `week`, `month`, `3month`, `6month`,
+`year`, `5year`, `10year`, `20year`, and `50year`. There is no native
+`15minute` interval. Bounds are `regular` or `extended`; adjustment is
+`none`, `split`, or `all` (day or coarser only). `series`, `latest` and
+`last:N` affect server output length, not calculation length. Date starts
+mean UTC midnight; a date end includes its entire UTC day. A missing end can
+be resolved once at the pre-acquisition cutoff.
+
+Normalized points end no later than the earlier of the query end and the
+pre-acquisition time. Intraday times use the nominal elapsed interval from
+`begins_at`; regular daily points use the next UTC midnight following a
+validated XNYS session. Extended daily and week-or-longer results are
+raw-only rather than given guessed closes. `latest` in the normalized response
+is the final eligible point from the returned window, and can be absent if the
+server only returned a newer, ineligible row. Values in the normalized response
+are decimal strings or null; null never means zero. Signed fields, including
+Supertrend direction, remain signed. Missing fields are separately identified.
+
+Each series holds the **returned** parameters as reported, not inferred
+defaults, and points to the batch with the exact request, receipt and evidence
+hashes. Its ID includes the exact request and receipt identity; it does not join
+snapshots across different windows or receipt times. Warmup status and source
+quality are unknown even when values are non-null. The snapshot may incorporate
+later provider revisions and does not establish what was known in real time on
+a historical date. Provider indicator reports must stay separate from local
+indicator calculations and signals.
+
+## Native indicator runtime (v0.6)
+
+Off by default. Add `--native-indicators all` for all eighteen types, or a
+comma-separated list such as `--native-indicators ema,rsi,macd,pivot_points`.
+`--native-output latest` (default), `last:3`, or `series` controls provider output.
+`--native-interval` explicitly selects the provider timeframe, otherwise the PA
+period is used. **PA 15minute requires an explicit native interval override**:
+there is no native 15minute and 5minute values are never relabelled.
+
+`--native-config config.json` adds parameterized requests, including several
+instances of the same type. Example contents:
+
+```json
+[
+  {"type":"ema","parameters":{"period":20}},
+  {"type":"ema","parameters":{"period":50}},
+  {"type":"macd","parameters":{"fast_period":12,"slow_period":26,"signal_period":9},"output":"last:3"},
+  {"type":"supertrend","parameters":{"period":10,"multiplier":3},"interval":"5minute"}
+]
+```
+
+Only type/parameters/interval/output keys are allowed. Requests are validated
+before transport opens and capped at 64 calls including symbol batching.
+Use `--native-window-start RFC3339` for a stable warmup input window. Otherwise
+a consistent matching saved native window is restored across restarts; if absent,
+the original bar coverage start is frozen for the process run. Each polling
+iteration freezes its end before serial native calls. Explicit start flags override restored defaults; new configurations may use
+the earlier bar coverage window. Always inspect the displayed query window. No
+recursive indicator series is split across time windows or stitched. Window
+changes receive a distinct query identity, not a historical-revision label.
+
+Each request has AVAILABLE_SOURCE_UNKNOWN, PARTIAL, UNDEFINED, EMPTY, RAW_ONLY
+or ERROR status. A failed type does not suppress successful siblings. All-null
+latest values remain UNDEFINED, never zero or proof of sufficient warmup.
+Supertrend direction is the original signed value, not an inferred long/short
+interpretation. Terminal JSON includes every latest multi-column value, requested
+and returned parameters, native interval/window, receipt/cutoff and quality.
+
+SQLite stores independent native snapshots with monotonically ordered IDs and
+`after_bar_seq`. Latest display slots distinguish symbol/type/parameters/interval/
+bounds/adjustment/output; each full input window has its own query ID and retained
+history. A new ERROR snapshot replaces the displayed success for that slot, so
+previous values cannot masquerade as the latest successful response. Snapshot
+output is bounded to 640 slots and twenty points per slot, with explicit truncation
+and full point counts; complete saved evidence remains in SQLite. Disk history
+grows and needs private retention planning. Optional capture uses the same private
+`--capture-dir`; raw provider responses must not be published.
+
+Dashboard separates local calculations and native values. Focusing any historical
+PA event hides all current native values; no later native result is inserted into
+Engine events or changes PA rules. Native source interpolation, warmup and seed
+remain unknown. `latest` means last returned point, not independently verified
+current market data; effective time and actual receipt are shown separately.
+
+If selected saved slots have different input starts, automatic restoration fails
+before opening transport and asks for an explicit `--native-window-start`; it
+never silently changes a recursive indicator's window. Newly selected types or
+symbols inherit the single restored window when one exists (displayed per request).
+If refresh fails, native current-value rows are hidden and marked DISCONNECTED;
+a recently received response is never used as a substitute for point-time freshness.

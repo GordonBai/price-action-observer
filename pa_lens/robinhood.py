@@ -15,6 +15,7 @@ import sys
 from typing import Callable
 
 from .core import Bar
+from .provider_indicators import INDICATORS, acquire_indicators, validate_indicator_request
 
 HISTORICALS = "get_equity_historicals"
 QUOTES = "get_equity_quotes"
@@ -95,6 +96,8 @@ def _span(interval):
 
 
 def _validate_request(tool, args):
+    if tool == INDICATORS:
+        return validate_indicator_request(args)
     allowed = {"symbols"} if tool == QUOTES else _HISTORY_KEYS if tool == HISTORICALS else None
     if allowed is None or not isinstance(args, dict) or args.keys() != allowed:
         raise ValueError("Robinhood request is not an allowlisted read")
@@ -121,7 +124,7 @@ def _transport_failure(exc, fallback="ROBINHOOD_READ_UNAVAILABLE"):
     return RobinhoodError(fallback)
 
 
-def _results(payload):
+def _results(payload, *, indicators=False):
     if not isinstance(payload, dict) or payload.get("isError"):
         raise RobinhoodError("ROBINHOOD_READ_FAILED")
     if "structuredContent" in payload:
@@ -136,8 +139,11 @@ def _results(payload):
         except ValueError:
             raise RobinhoodError("ROBINHOOD_RESPONSE_SCHEMA_MISMATCH") from None
     data = payload.get("data") if isinstance(payload, dict) else None
-    if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+    if (not isinstance(data, dict) or "results" not in data or
+            (not isinstance(data["results"], list) and not (indicators and data["results"] is None))):
         raise RobinhoodError("ROBINHOOD_RESPONSE_SCHEMA_MISMATCH")
+    if indicators and not any(data.get(key) for key in ("errors", "restricted")):
+        return data
     if any(data.get(key) for key in ("errors", "not_found", "restricted")):
         raise RobinhoodError("ROBINHOOD_PROVIDER_ERROR_OR_RESTRICTED_RESULT")
     return data["results"]
@@ -190,7 +196,7 @@ class RobinhoodProvider:
             response_hash = _hash(reply)
         except (TypeError, ValueError, OverflowError):
             raise RobinhoodError("ROBINHOOD_RESPONSE_SCHEMA_MISMATCH") from None
-        return _results(reply), {"tool": tool, "request": request, "sent_at": sent.isoformat(),
+        return _results(reply, indicators=tool == INDICATORS), {"tool": tool, "request": request, "sent_at": sent.isoformat(),
                                  "received_at": received.isoformat(), "schema_sha256": schema_hash,
                                  "response_sha256": response_hash}
 
@@ -319,6 +325,12 @@ class RobinhoodProvider:
         return FetchResult(tuple(bars), tuple(raw), tuple(batches), quality, source, cutoff.isoformat(),
                            tuple(provenance[(b.symbol, b.time)] for b in bars))
 
+    def indicators(self, symbols, start, end, indicator_type, interval, bounds="regular",
+                   adjustment_type="split", output="series", parameters=None):
+        """Read one native calculation per symbol over the exact supplied window."""
+        return acquire_indicators(self, symbols, start, end, indicator_type, interval, bounds,
+                                  adjustment_type, output, parameters)
+
     def quotes(self, symbols):
         """Retrieve quote evidence without creating, repairing, or pricing any bar."""
         names = _symbols(symbols)
@@ -369,7 +381,7 @@ def open_robinhood(*, infra_root=None, binary="codex", timeout=30):
         try:
             transport = stack.enter_context(transport_type(binary=binary, timeout=timeout))
             descriptors = {k: v for k, v in transport.tool_descriptors.items()
-                           if k in (HISTORICALS, QUOTES)}
+                           if k in (HISTORICALS, QUOTES, INDICATORS)}
             if not descriptors:
                 raise RobinhoodError("ROBINHOOD_READ_TOOL_UNAVAILABLE")
             read = transport._read_call

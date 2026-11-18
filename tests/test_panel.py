@@ -72,23 +72,28 @@ const html=fs.readFileSync(process.argv[1],'utf8'),code=html.match(/<script>([\s
 const ctx={document,URL,console,setInterval:()=>0,fetch:()=>{throw Error('not called')}};vm.createContext(ctx);vm.runInContext(code,ctx);
 const bars=[0,1,2].map(n=>({time:`2026-11-17T14:3${n+1}:00Z`,open:10+n,high:12+n,low:9+n,close:11+n}));
 const events=[{id:'a',observed_at:bars[1].time,family:'inside_bar',status:'observed',anchors:{level:10},explanation:'<img src=x>',knowledge_references:[{title:'test',summary:'summary',counterexample:'counter',source_urls:['https://example.com','javascript:alert(1)'],sources:[{review_method:'sampled_frames',locator:'page 3',limitations:'audio not heard'}]}],uncertainty:'uncertain'},{id:'b',observed_at:bars[2].time,family:'double_bottom',status:'candidate'}];
-ctx.fixture={streams:[{symbol:'T',timeframe:'1',source:'fixture',bars,events,state:{}}]};
+ctx.fixture={native_indicators:{slot_count:2,items:[{symbol:'T',indicator_type:'macd',requested:{interval:'5minute',parameters:{}},returned_params:{fast_period:12},status:'AVAILABLE_SOURCE_UNKNOWN',latest:{time:'2026-11-17T14:35:00Z',values:{macd:'-1.2',signal:'0',histogram:null}},received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]},{symbol:'T',indicator_type:'supertrend',requested:{interval:'5minute',parameters:{}},status:'ERROR',latest:null,received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]}]},streams:[{symbol:'T',timeframe:'1',source:'fixture',bars,events,state:{}}]};
 vm.runInContext('snapshot=fixture;render()',ctx);
 function all(el,p){return [ ...(p(el)?[el]:[]), ...el.children.flatMap(x=>all(x,p)) ];}
 function countCandles(){return all(elements.chart,x=>x.attrs.class==='candle-body').length}
 assert.equal(countCandles(),3,'need OHLC candles');
+assert(JSON.stringify(elements['native-indicators']).includes('histogram'), 'native multi-fields missing');
+assert(JSON.stringify(elements['native-indicators']).includes('null'), 'null must not become zero');
+assert(JSON.stringify(elements['native-indicators']).includes('ERROR'), 'failed request hidden');
 ctx.fixture.streams[0].events.push({id:'basic',observed_at:bars[2].time,family:'trend_bar',status:'observed'});
 vm.runInContext('render()',ctx);assert.equal(elements.events.children.length,2,'basic features should hide by default');
 elements['show-basic'].checked=true;vm.runInContext('render()',ctx);assert.equal(elements.events.children.length,3,'all features toggle');elements['show-basic'].checked=false;
 elements['family-filter'].value='inside_bar';vm.runInContext('render()',ctx);assert.equal(elements.events.children.length,1);
 all(elements.events,x=>x.tagName==='button')[0].listeners.click();assert.equal(countCandles(),2,'future bars must hide at event focus');
 assert(elements['focus-info'].textContent.includes('14:32'));
+assert.equal(elements['native-indicators'].children.length,0,'historical focus leaked later native values');
+assert(elements['native-notice'].textContent.includes('历史定位隐藏原生快照'));
 assert.equal(all(elements.events,x=>x.tagName==='a').length,1,'reject unsafe source URL');
 assert(elements.context.textContent.includes('事件未保存语境'),'must not backfill latest context');
 assert(all(elements.events,x=>x.textContent==='反例 / 边界：counter').length===1,'source counterexample absent');
 assert(all(elements.events,x=>x.tagName==='pre'&&x.textContent.includes('audio not heard')).length===1,'source review boundary absent');
 assert(all(elements.events,x=>x.tagName==='img').length===0,'text must not become markup');
-elements['clear-focus'].listeners.click();assert.equal(countCandles(),3);
+elements['clear-focus'].listeners.click();assert.equal(countCandles(),3);assert(elements['native-indicators'].children.length>0,'native values not restored');
 elements['family-filter'].value='';elements['status-filter'].value='candidate';vm.runInContext('render()',ctx);assert.equal(elements.events.children.length,1);
 // Default grouped mode combines multiple events at the same observed bar.
 elements['family-filter'].value='';elements['status-filter'].value='';
@@ -109,6 +114,8 @@ elements.streams.value='1';elements.streams.listeners.change();assert.equal(coun
  assert(elements.status.textContent.startsWith('NEW'),'stale response replaced newer snapshot');
  ctx.fetch=async()=>({ok:false,status:401});await vm.runInContext('refresh()',ctx);
  assert(elements.status.textContent.startsWith('DISCONNECTED'),'failure must mark stale display');
+ assert(elements['native-notice'].textContent.startsWith('DISCONNECTED'),'native failure must explicitly mark stale');
+ assert.equal(elements['native-indicators'].children.length,0,'stale native values must hide');
  assert(!JSON.stringify(elements).includes('not-a-real-secret'),'credential rendered in output');
  console.log('ok');
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -57,6 +57,19 @@ python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
 ```
 这是有限两轮探索，不是daemon部署。初次立即取数，后续按边界加等待时间；供应商没有公开延迟SLA。每个进程一套周期和多只标的；不同周期进程使用不同数据库。
 
+### Robinhood 原生18指标
+新增独立的原生指标输出区，不替换本地 EMA20/RSI14，也不改变PA规则。支持全部18类、各自完整参数、多字段和 `series` / `latest` / `last:N`。默认不额外调用；显式启用：
+
+```bash
+python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
+  --interval 5minute --start 2026-11-18T14:30:00Z --end 2026-11-18T17:20:00Z \
+  --accept-unknown --native-indicators all --native-output last:3 \
+  --db local_data/rh-native-demo.sqlite3
+```
+这是固定历史窗口示例，不是当前报价。可用 `--native-config examples/native-indicators.json` 指定多组参数；`--native-window-start` 固定计算窗口起点。不同请求窗口可能产生不同EMA/MACD数值，不能拼接成当时已知的连续真值。原生15分钟不存在，需要另设 `--native-interval` 时必须明确其不同周期。
+
+原生值带参数、bar时点、接收时点、来源质量/预热未知提示；负值保留，null不是0。MACD三列、通道三列、Supertrend两列、Pivot七列完整显示。单项错误/未定义不会隐去其它成功项。历史事件定位隐藏后来采集的原生值，避免前视。见[完整契约](docs/ROBINHOOD.md)和[实测证据](docs/reports/NATIVE_INDICATORS_V06_ACCEPTANCE.md)。
+
 ### 本地接入与面板
 在自己的环境设置至少16字符的随机 `PA_LENS_TOKEN`，再运行：
 
@@ -89,11 +102,11 @@ python knowledge/kb.py search "双底"
 
 ### 主动数据源与日线 swing
 升级旧版请先读[迁移说明](docs/MIGRATION_V05.md)，不要复用旧代码身份的日志。
-Robinhood 是当前主动取数路径，复用用户已安装的 [Robinhood trading infra](https://github.com/GordonBai/robinhood-trading-infra) 官方 Codex MCP transport，不复制 OAuth 凭据。只有股票历史和报价两个工具在代码白名单内。分钟/5/10/30分钟/小时/4小时及日线使用明确粒度，不把日线伪装成分钟线。配置和运行命令见 [Robinhood 接入](docs/ROBINHOOD.md)。
+Robinhood 是当前主动取数路径，复用用户已安装的 [Robinhood trading infra](https://github.com/GordonBai/robinhood-trading-infra) 官方 Codex MCP transport，不复制 OAuth 凭据。股票历史、报价及原生技术指标三个只读工具在代码白名单内，不含账户或下单。分钟/5/10/30分钟/小时/4小时及日线使用明确粒度，不把日线伪装成分钟线。配置和运行命令见 [Robinhood 接入](docs/ROBINHOOD.md)。
 
 **默认严格：`interpolated=true` 一律排除；字段缺失视为未知，也不进入形态分析。** 显式 `--accept-unknown` 才能探索未知质量数据，所有输出保留 `DATA_QUALITY_UNKNOWN`，`ready=false`。正成交量不能证明没有插值。实测近期分钟和日线缺该字段，所以严格模式不产生 PA；并非悄悄改用另一个供应商。
 
-日线用 XNYS 交易日历，跨周末/假日连续分析，缺交易日则重置。供应商每日 UTC 日期标签转换为**下一 UTC 零点的保守可用时刻**，不是开盘时已知。开盘专用/5分钟聚合检测不用于日线。本地 EMA20、Wilder RSI14 和引擎均值 TR 分开展示其种子与预热；不冒充供应商技术指标。形态优先级只是展示规则，不是胜率。
+日线用 XNYS 交易日历，跨周末/假日连续分析，缺交易日则重置。供应商每日 UTC 日期标签转换为**下一 UTC 零点的保守可用时刻**，不是开盘时已知。开盘专用/5分钟聚合检测不用于日线。本地 EMA20、Wilder RSI14 和引擎均值 TR 分开展示其种子与预热；不冒充供应商技术指标；Robinhood 原生18指标另列来源和参数。形态优先级只是展示规则，不是胜率。
 
 旧 Alpaca 数据导入、历史证据与显式兼容入口仍保留，但不作为默认生产路径，不会自动回退。既往 SIP 三个月回放不是 Robinhood 三个月分钟线验证。实测 Robinhood 8/17 分钟线全是插值，不可用于分析。见 [v0.5 原始验收结论](docs/reports/ROBINHOOD_V05_ACCEPTANCE.md)。独立常驻服务、无人值守可靠性仍未部署验证。
 

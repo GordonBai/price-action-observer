@@ -25,7 +25,7 @@ MAX_BODY = 65536
 MAX_STREAMS = 64
 # Pin the engine sources loaded by this process, not unrelated documentation commits.
 _code_hash = hashlib.sha256()
-for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py'):
+for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py', 'provider_indicators.py', 'native_runtime.py'):
     _path = Path(__file__).with_name(_name)
     if _path.exists():
         _code_hash.update(_name.encode() + b'\0' + _path.read_bytes())
@@ -119,6 +119,8 @@ class Journal:
             source TEXT NOT NULL, symbol TEXT NOT NULL, timeframe TEXT NOT NULL,
             status TEXT NOT NULL, checked_at TEXT NOT NULL, rows INTEGER NOT NULL,
             error TEXT, PRIMARY KEY(source,symbol,timeframe))''')
+        self.conn.execute('CREATE TABLE IF NOT EXISTS native_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, slot_key TEXT NOT NULL, payload TEXT NOT NULL, after_bar_seq INTEGER NOT NULL)')
+        self.conn.execute('CREATE INDEX IF NOT EXISTS native_slot_index ON native_snapshots(slot_key,id)')
         self.conn.execute('CREATE TABLE IF NOT EXISTS acquisitions (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL, payload TEXT NOT NULL, after_bar_seq INTEGER NOT NULL)')
         self.conn.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
         identity = {'exchange_calendars_version': version('exchange-calendars'), 'config_hash': Engine(config).config_hash,
@@ -294,6 +296,28 @@ class Journal:
                 for row in self.conn.execute(
                     'SELECT source,symbol,timeframe,status,checked_at,rows,error FROM transport ORDER BY source,symbol,timeframe')]
 
+    def record_native(self, record):
+        # Snapshots are separate observations, never retroactively attached to PA events.
+        with self.lock:
+            seq=self.conn.execute('SELECT COALESCE(MAX(seq),0) FROM bars').fetchone()[0]
+            cursor=self.conn.execute('INSERT INTO native_snapshots(slot_key,payload,after_bar_seq) VALUES(?,?,?)',
+                (record['slot_key'],json.dumps(record,sort_keys=True,allow_nan=False),seq))
+            self.conn.commit()
+            return cursor.lastrowid
+
+    def native_snapshot(self, limit=640):
+        items=[]
+        count=self.conn.execute('SELECT COUNT(DISTINCT slot_key) FROM native_snapshots').fetchone()[0]
+        for ident,raw,seq in self.conn.execute('SELECT id,payload,after_bar_seq FROM native_snapshots WHERE id IN (SELECT MAX(id) FROM native_snapshots GROUP BY slot_key) ORDER BY id DESC LIMIT ?', (limit,)):
+            item=dict(id=ident,after_bar_seq=seq,**json.loads(raw))
+            item['point_count']=len(item['points']);item['points']=item['points'][-20:]
+            item['points_truncated']=item['point_count']>20
+            item['batch_count']=len(item['batches']);item['batches']=item['batches'][:10]
+            item['batches_truncated']=item['batch_count']>10
+            items.append(item)
+        return dict(items=items,slot_count=count,limit=limit,truncated=count>limit,
+                    notice='Current independent provider snapshots; not historical PA inputs. Source quality/warmup unknown; latest does not mean fresh.')
+
     def record_acquisition(self, evidence):
         """Persist normalized request/provenance, not credentials or raw transport errors."""
         required = {'source','symbols','timeframe','received_at','cutoff','status','quality','batches','bar_provenance'}
@@ -396,7 +420,7 @@ class Journal:
                 ready, readiness = False, quality['acquisition_status']
             if quality['quarantined_count']:
                 ready, readiness = False, 'DATA_REVIEW_REQUIRED'
-            return {'acquisitions':self._acquisitions(), 'transport': transport, 'data_quality': quality, 'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
+            return {'native_indicators':self.native_snapshot(), 'acquisitions':self._acquisitions(), 'transport': transport, 'data_quality': quality, 'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
                     'rule_identity': dict(self.identity), 'streams': result,
                     'notice': 'Robinhood 主动只读获取；DATA_QUALITY_UNKNOWN 表示插值标记缺失，探索结果不可当已验证信号。本地 EMA/RSI 独立计算，不等于供应商指标。日线时间为保守的下一 UTC 午夜可用时刻。存在隔离修订或迟到数据时，解释基于首次接收版K线且未重算，须另库复核，不应依赖其结构判断。接收器不是行情供应商；RECENT仅表示提交的时间戳接近当前，不代表已验证实时报价。收市时历史bar会显示STALE。'}
 
@@ -404,7 +428,7 @@ class Journal:
         result = self.snapshot(now)
         streams = [{key: stream[key] for key in ('symbol','timeframe','source','bar_count','last_bar_close','received_at','age_seconds','freshness','readiness','ready','data_quality')} for stream in result['streams']]
         status = 'WAITING_FOR_DATA' if not streams else ('RECENT_INPUT' if all(s['freshness']=='RECENT' for s in streams) else 'STALE')
-        return {'acquisitions':result['acquisitions'], 'transport': result['transport'], 'data_quality': result['data_quality'], 'status': status, 'live_verified': False, 'ready': result['ready'], 'readiness': result['readiness'], 'rule_identity': result['rule_identity'], 'streams': streams, 'notice': result['notice']}
+        return {'native_indicators':result['native_indicators'], 'acquisitions':result['acquisitions'], 'transport': result['transport'], 'data_quality': result['data_quality'], 'status': status, 'live_verified': False, 'ready': result['ready'], 'readiness': result['readiness'], 'rule_identity': result['rule_identity'], 'streams': streams, 'notice': result['notice']}
 
     def close(self):
         with self.lock:

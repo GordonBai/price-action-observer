@@ -1,0 +1,6 @@
+[
+  {"type": "ema", "parameters": {"period": 9}},
+  {"type": "ema", "parameters": {"period": 20}},
+  {"type": "rsi", "parameters": {"period": 14}},
+  {"type": "macd", "parameters": {"fast_period": 12, "slow_period": 26, "signal_period": 9}}
+]

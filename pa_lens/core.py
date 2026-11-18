@@ -12,7 +12,7 @@ from .observations import ObservationDetector
 from .structures import StructureDetector
 from .explanations import ground_event, KNOWLEDGE_VERSION
 
-ENGINE_VERSION = "0.5.0"
+ENGINE_VERSION = "0.6.0"
 
 
 def parse_time(value):

@@ -57,6 +57,19 @@ python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
 ```
 This is a bounded two-round exploratory run, not daemon deployment. The first request is immediate; later rounds use a close grid plus settling delay, without a provider latency SLA. One process handles one interval and multiple symbols; separate interval processes need separate journals.
 
+### All 18 native Robinhood indicators
+Native outputs have a separate view: they do not replace local EMA20/RSI14 or alter PA rules. All eighteen types, type-specific parameters, multiple value fields and `series` / `latest` / `last:N` are supported. Extra calls are off by default; enable them explicitly:
+
+```bash
+python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
+  --interval 5minute --start 2026-11-18T14:30:00Z --end 2026-11-18T17:20:00Z \
+  --accept-unknown --native-indicators all --native-output last:3 \
+  --db local_data/rh-native-demo.sqlite3
+```
+This is a fixed historical-window example, not a current quote. Use `--native-config examples/native-indicators.json` for multiple parameter sets and `--native-window-start` for a fixed calculation start. Different windows can change EMA/MACD values; snapshots are not stitched into historical point-in-time truth. Native 15-minute indicators do not exist; an explicit `--native-interval` is labeled as a different interval, never silently substituted.
+
+Native values retain requested/returned parameters, point and receipt times, unknown input quality/warmup, signed values and nulls. MACD/channel/Supertrend/pivot outputs retain all their fields. Individual errors or undefined outputs do not hide successful siblings. Historical event focus hides subsequently collected native values. See the [full contract](docs/ROBINHOOD.md) and [actual evidence](docs/reports/NATIVE_INDICATORS_V06_ACCEPTANCE.md).
+
 ### Local ingestion and panel
 Set `PA_LENS_TOKEN` to your own random secret of at least 16 characters in your environment, then:
 
@@ -87,11 +100,11 @@ Replay accepts canonical JSONL/CSV or the documented Alpaca-export format (`time
 
 ### Active provider and daily swing observations
 Upgrading from an older version? Read the [migration guide](docs/MIGRATION_V05.md) and use a new journal.
-Robinhood is the active acquisition path, reusing the user's installed [Robinhood trading infra](https://github.com/GordonBai/robinhood-trading-infra) through its official Codex MCP transport. No OAuth credentials are copied. Only equity history and quote tools are allowlisted. Supported analysis periods are minute, 5/10/30 minutes, hour, 4 hours and daily; daily bars are not coerced into minute candles. See [Robinhood setup and commands](docs/ROBINHOOD.md).
+Robinhood is the active acquisition path, reusing the user's installed [Robinhood trading infra](https://github.com/GordonBai/robinhood-trading-infra) through its official Codex MCP transport. No OAuth credentials are copied. Only equity history, quotes and native technical indicators are allowlisted; account and order tools are excluded. Supported analysis periods are minute, 5/10/30 minutes, hour, 4 hours and daily; daily bars are not coerced into minute candles. See [Robinhood setup and commands](docs/ROBINHOOD.md).
 
 **Strict by default:** explicitly interpolated bars are always excluded. Missing interpolation flags are unknown and also excluded. Explicit `--accept-unknown` permits exploration with persistent `DATA_QUALITY_UNKNOWN` and `ready=false`. Positive volume does not prove non-interpolation. The actual recent minute/daily responses omitted this flag, so strict mode produces no PA observations instead of silently changing data sources.
 
-Daily analysis uses XNYS sessions, persists over weekends/holidays and resets on missing expected sessions. Source UTC daily labels map to conservative **following-UTC-midnight availability**, never session-open knowledge. Opening-only and 5-minute aggregation detectors are disabled on daily bars. Local EMA20, Wilder RSI14 and the engine's mean-TR indicator expose their seed/warmup separately from provider data. Display priority is not probability.
+Daily analysis uses XNYS sessions, persists over weekends/holidays and resets on missing expected sessions. Source UTC daily labels map to conservative **following-UTC-midnight availability**, never session-open knowledge. Opening-only and 5-minute aggregation detectors are disabled on daily bars. Local EMA20, Wilder RSI14 and the engine's mean-TR indicator expose their seed/warmup separately from the 18 optional Robinhood-native indicators. Display priority is not probability.
 
 Legacy Alpaca imports, prior evidence and explicitly selected compatibility paths remain, with **no automatic fallback**. Earlier SIP minute replay is not validation of Robinhood minute-history coverage: the August minute probe was entirely interpolated and unusable. See [v0.5 actual acceptance evidence](docs/reports/ROBINHOOD_V05_ACCEPTANCE.md). Unattended deployment and sustained uptime are not claimed.
 

@@ -34,8 +34,13 @@ def main():
         rh.add_argument('--accept-unknown',action='store_true',help='exploratory only: unknown interpolation, ready=false')
         rh.add_argument('--infra-root',help='existing installed Robinhood trading infra; never copies credentials')
         rh.add_argument('--codex-binary',default='codex');rh.add_argument('--timeout',type=float,default=30)
-        rh.add_argument('--db',default='local_data/robinhood-v05.sqlite3')
+        rh.add_argument('--db',default='local_data/robinhood-v06.sqlite3')
         rh.add_argument('--capture-dir',help='optional private capture; inside project only local_data/')
+        rh.add_argument('--native-indicators',help='all or comma-separated native types; off by default')
+        rh.add_argument('--native-config',help='JSON list of type/parameters/interval/output objects')
+        rh.add_argument('--native-output',default='latest',help='series, latest, or last:N')
+        rh.add_argument('--native-interval',help='explicit provider interval, independent of PA period; required override for PA15m')
+        rh.add_argument('--native-window-start',help='fixed RFC3339 warmup input start; defaults to first acquisition start')
         rh.add_argument('--quotes',action='store_true',help='separate raw quote evidence, never OHLC replacement')
         rh.add_argument('--align-close',action='store_true',help='wait for interval-close grid plus settle delay between polls')
         rh.add_argument('--settle-seconds',type=float,default=10)
@@ -107,9 +112,10 @@ def main():
 
 def _run_robinhood(args,parser):
     from datetime import datetime,timedelta,timezone
-    from .robinhood import open_robinhood,RobinhoodError,_time,_symbols,_options
+    from .robinhood import open_robinhood,RobinhoodError,_time,_symbols,_options,INTERVAL_MINUTES
     from .rh_runtime import acquire,next_poll_delay,poll_start,poll_windows,source_identity
     from .service import Journal,make_server
+    from .native_runtime import native_specs,validate_native,acquire_native,restore_native_start
     import math,time,threading
     _symbols(args.symbols);_options('5minute' if args.interval=='15minute' else args.interval,args.bounds,args.adjustment)
     if args.interval=='15minute' and args.bounds!='regular':parser.error('derived 15minute requires regular bounds')
@@ -121,12 +127,25 @@ def _run_robinhood(args,parser):
     if args.start:_time(args.start)
     if args.end:_time(args.end)
     if args.start and args.end and _time(args.start)>=_time(args.end):parser.error('start must precede end')
+    configuration=None
+    if args.native_config:
+        config_path=Path(args.native_config)
+        if config_path.stat().st_size>65536:parser.error('native config exceeds 64 KiB')
+        configuration=json.loads(config_path.read_text(encoding='utf-8'))
+    specs=native_specs(args.native_indicators,configuration,args.native_interval or args.interval,args.native_output)
+    native_start=_time(args.native_window_start) if args.native_window_start else (_time(args.start) if args.start else None)
+    validation_end=_time(args.end) if args.end else datetime.now(timezone.utc)
+    validation_start=native_start or validation_end-timedelta(days=180)
+    validate_native(args.symbols,validation_start,validation_end,specs,args.bounds,args.adjustment)
     token=os.environ.get('PA_LENS_TOKEN','')
     if args.serve_port is not None and len(token)<16:parser.error('PA_LENS_TOKEN needs at least 16 characters for --serve-port')
     Path(args.db).parent.mkdir(parents=True,exist_ok=True)
     journal=Journal(args.db,display_config={'min_priority':args.display_min_priority,'cooldown_minutes':args.display_cooldown_minutes})
     server=None
     try:
+        if specs and native_start is None:
+            saved_start=restore_native_start(journal,args.symbols,specs,args.bounds,args.adjustment)
+            if saved_start:native_start=_time(saved_start)
         if args.serve_port is not None:
             server=make_server(journal,token,port=args.serve_port)
             threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -134,7 +153,8 @@ def _run_robinhood(args,parser):
         with open_robinhood(infra_root=args.infra_root,binary=args.codex_binary,timeout=args.timeout) as provider:
             iterations=0
             while True:
-                end=_time(args.end) if args.end else datetime.now(timezone.utc)
+                now=datetime.now(timezone.utc)
+                end=min(_time(args.end),now) if args.end else now
                 source=source_identity(args.interval,args.bounds,args.adjustment,args.accept_unknown)
                 windows=poll_windows(journal,args.symbols,end,args.interval,args.lookback_minutes,source,
                                      explicit_start=_time(args.start) if args.start else None)
@@ -142,10 +162,20 @@ def _run_robinhood(args,parser):
                     for symbols,start in windows:
                         result=acquire(provider,journal,symbols,start,end,interval=args.interval,bounds=args.bounds,
                             adjustment_type=args.adjustment,accept_unknown=args.accept_unknown,capture_dir=args.capture_dir,include_quotes=args.quotes)
+                        if specs:result['provider_indicators']='SEPARATE_NATIVE_REQUESTS_FOLLOW'
                         print(json.dumps(result,ensure_ascii=False),flush=True)
                 except (RobinhoodError,ValueError):
                     # Fail visibly, not indefinite silent retries or alternate providers.
                     raise ValueError('Robinhood acquisition/validation failed; inspect local health/audit. No fallback was used.') from None
+                if specs:
+                    if native_start is None:
+                        timeframe='15' if args.interval=='15minute' else ('D' if args.interval=='day' else str(INTERVAL_MINUTES[args.interval]))
+                        coverage=[journal.coverage_start(symbol,timeframe,source) for symbol in args.symbols]
+                        native_start=min([_time(t) for t in coverage if t]+[start for _,start in windows])
+                    native=acquire_native(provider,journal,args.symbols,native_start,end,specs,bounds=args.bounds,
+                        adjustment_type=args.adjustment,capture_dir=args.capture_dir)
+                    print(json.dumps({'native_indicators':native,'pa_interval':args.interval,'native_input_window_start':native_start.isoformat(),
+                        'notice':'Independent provider snapshots. Warmup/source quality unknown; not PA inputs or calibrated signals.'},ensure_ascii=False),flush=True)
                 iterations+=1
                 if args.command=='fetch-robinhood' or args.once or (args.count and iterations>=args.count):break
                 delay=next_poll_delay(datetime.now(timezone.utc),args.interval,args.settle_seconds) if args.align_close else args.poll_seconds
