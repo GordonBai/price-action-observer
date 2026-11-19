@@ -4,9 +4,17 @@ import hashlib
 import json
 from pathlib import Path
 from .provider_indicators import INDICATOR_DEFAULTS,validate_indicator_request
-from .robinhood import _symbols,_time,_wire,RobinhoodError
+from .robinhood import INTERVAL_MINUTES,_symbols,_time,_wire,RobinhoodError
 
 MAX_NATIVE_CALLS=64
+INTRADAY_CONTEXT_PACK = {
+    'ema': {'period': 20}, 'vwap': {}, 'atr': {'period': 14},
+    'rsi': {'period': 14}, 'pivot_points': {'method': 'classic'},
+}
+DAILY_CONTEXT_PACK = {
+    'ema': {'period': 20}, 'atr': {'period': 14}, 'rsi': {'period': 14},
+    'macd': {'fast_period': 12, 'slow_period': 26, 'signal_period': 9},
+}
 
 
 def native_specs(selection=None, configuration=None, interval='5minute', output='latest'):
@@ -59,9 +67,17 @@ def restore_native_start(journal,symbols,specs,bounds='regular',adjustment_type=
     starts=[]
     for symbol in symbols:
         for spec in specs:
-            raw=journal.conn.execute('SELECT payload FROM native_snapshots WHERE slot_key=? ORDER BY id DESC LIMIT 1',
-                (slot_identity(symbol,spec,bounds,adjustment_type),)).fetchone()
-            if raw:starts.append(json.loads(raw[0])['requested']['start'])
+            # Journals created before the context pack upgrade used latest slots.
+            output = spec['output']
+            outputs = (output, 'latest') if output == 'last:2' else (output,)
+            for output in outputs:
+                slot = slot_identity(symbol, dict(spec, output=output), bounds, adjustment_type)
+                raw = journal.conn.execute(
+                    'SELECT payload FROM native_snapshots WHERE slot_key=? ORDER BY id DESC LIMIT 1', (slot,)
+                ).fetchone()
+                if raw:
+                    starts.append(json.loads(raw[0])['requested']['start'])
+                    break
     if len({_time(value) for value in starts})>1:
         raise ValueError('saved native windows differ; provide explicit --native-window-start to choose a common window')
     return starts[0] if starts else None
@@ -119,10 +135,25 @@ def acquire_native(provider,journal,symbols,start,end,specs,*,bounds='regular',a
     return output
 
 
-def context_specs(specs,interval='5minute',enabled=True,bounds='regular'):
-    result=list(specs)
-    if not enabled or interval=='15minute' or bounds not in ('regular','extended'):return result
-    for name,period in (('ema',20),('rsi',14)):
-        if not any(s['type']==name and s['interval']==interval and s['parameters'].get('period',INDICATOR_DEFAULTS[name]['period'])==period for s in result):
-            result.append(dict(type=name,parameters={'period':period},interval=interval,output='latest'))
+def context_specs(specs, interval='5minute', enabled=True, bounds='regular'):
+    result = list(specs)
+    if not enabled or bounds not in ('regular', 'extended'):
+        return result
+    if interval in INTERVAL_MINUTES:
+        pack = INTRADAY_CONTEXT_PACK
+    elif interval == 'day' and bounds == 'regular':
+        pack = DAILY_CONTEXT_PACK
+    else:
+        return result
+    for name, parameters in pack.items():
+        matches = [
+            spec for spec in result
+            if spec['type'] == name and spec['interval'] == interval
+            and {**INDICATOR_DEFAULTS[name], **spec['parameters']} == parameters
+        ]
+        if not matches:
+            result.append(dict(type=name, parameters=parameters.copy(), interval=interval, output='last:2'))
+        for spec in matches:
+            if spec['output'] == 'latest':
+                spec['output'] = 'last:2'
     return result

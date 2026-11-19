@@ -6,9 +6,9 @@
 <h1>Price Action Lens <span class="small">RESEARCH PREVIEW</span></h1><p>逐根已收盘 K 线 · 因果形态 · 中文证据解读。不是自动交易系统，不承诺覆盖全部 Brooks 形态。</p>
 <div class="row"><label>本地访问令牌 <input type="password" id="token" autocomplete="off" placeholder="PA_LENS_TOKEN"></label><button id="connect">读取 / 刷新</button><label><input type="checkbox" id="auto">每 5 秒刷新</label><select id="streams" aria-label="行情流"></select></div>
 <div id="error" role="alert"></div><div class="card"><strong id="status">尚未读取数据</strong><p id="notice" class="notice">接收器不是数据源。请先通过已验证的供应商适配器提交真实已收盘行情。历史回放不会被标为已验证实时行情。</p><div id="meta" class="small"></div></div>
-<div class="card"><h2>原生优先 PA 指标解读</h2><div id="native-context" style="white-space:pre-line;line-height:1.8">等待匹配原生 EMA20 / RSI14；不回退本地值。</div><details><summary>完整证据 / 参数 / 时间与质量</summary><pre id="native-context-evidence">尚无证据</pre></details></div>
+<div class="card"><h2>原生优先 PA 指标解读</h2><div id="native-context" style="white-space:pre-line;line-height:1.8">等待当前周期的原生指标。</div><details><summary>完整证据 / 参数 / 时间与质量</summary><pre id="native-context-evidence">尚无证据</pre></details></div>
 <div class="card"><h2>最近已收盘 OHLC 蜡烛</h2><svg id="chart" viewBox="0 0 1000 300" role="img" aria-label="已收盘OHLC蜡烛图"></svg><div id="range" class="small"></div><div id="chart-tooltip" role="status" aria-live="polite" style="white-space:pre-wrap;line-height:1.6;min-height:5em;padding:10px;border:1px solid #354760">悬停、点按或用 Tab 聚焦 K 线 / PA 标记，读取对应数据。</div><p id="focus-info" class="notice">显示当前快照；点击事件可隐藏其后的K线。</p><button id="clear-focus">返回最新快照</button></div>
-<div class="card"><h2>Robinhood 原生指标 <span class="small">用于当前指标语境，不改写纯K线形态或历史事件</span></h2><p id="native-notice" class="small">默认请求原生 EMA20 / RSI14；扩展指标可显式选择。</p><div id="native-indicators"></div></div>
+<div class="card"><h2>Robinhood 原生指标 <span class="small">用于当前指标语境，不改写纯K线形态或历史事件</span></h2><p id="native-notice" class="small">等待原生指标快照。</p><div id="native-indicators"></div></div>
 <div class="card"><h2>纯价格结构语境</h2><pre id="context">等待数据</pre></div>
 <div class="card"><h2>事件与解读 <span id="event-window" class="small">快照有限窗口；不是实际订单</span></h2><div class="row"><label>视图 <select id="event-mode"><option value="grouped">重点分组</option><option value="raw">原始事件</option></select></label><label>形态 <select id="family-filter"><option value="">全部</option></select></label><label>状态 <select id="status-filter"><option value="">全部</option></select></label><label id="basic-control"><input type="checkbox" id="show-basic">显示基础K线/缺口特征</label><span id="event-count" class="small"></span></div><details><summary>展示层过滤 / 冷却统计与配置</summary><pre id="display-stats">尚未读取</pre></details><table><thead><tr><th>可知时刻</th><th>形态 / 状态</th><th>证据解读</th></tr></thead><tbody id="events"></tbody></table></div>
 <div class="card"><h2>本地诊断指标（非主 PA 解读）</h2><p class="small">本区不是供应商指标；EMA/RSI/ATR 来自本地已接纳 K 线，方法与暖机独立显示，不能当成供应商数值或校准胜率。unknown 行情不升级为已验证。</p><pre id="local-indicators">等待数据</pre></div>
@@ -30,9 +30,17 @@ function showDetails(parent,title,value){const d=node('details'),summary=node('s
 function chartDescription(bar,stream,events=[]){
  const timeframe=bar.timeframe||stream?.timeframe||'未知',symbol=bar.symbol||stream?.symbol||'';
  const stamp=Date.parse(bar.time),daily=timeframe==='D';
- const ny=new Intl.DateTimeFormat('zh-CN',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(stamp));
+ const nyFormat=new Intl.DateTimeFormat('zh-CN',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+ const ny=nyFormat.format(stamp);
  const rows=[symbol+' · 周期 '+(daily?'日线 D':timeframe+' 分钟')];
- if(daily)rows.push('交易日 '+new Date(stamp-86400000).toISOString().slice(0,10)+'；保守可知时间 '+bar.time+'（不是交易日收市时刻）');
+ if(daily){
+  if(bar.time.endsWith('T00:00:00Z')||bar.time.endsWith('T00:00:00+00:00')){
+   rows.push('交易日 '+new Date(stamp-86400000).toISOString().slice(0,10)+'；保守可知时间 '+bar.time);
+  }else{
+   const parts=Object.fromEntries(nyFormat.formatToParts(stamp).map(({type,value})=>[type,value]));
+   rows.push('交易日 '+[parts.year,parts.month,parts.day].join('-')+'；已收盘时间 '+bar.time);
+  }
+ }
  else rows.push('已收盘时间 '+bar.time);
  rows.push('纽约时间 '+ny+'（America/New_York）','O '+bar.open+'  H '+bar.high+'  L '+bar.low+'  C '+bar.close);
  for(const event of events){
@@ -80,16 +88,22 @@ function renderNativeContext(stream){
   $('native-context').textContent=nativeStale?'DISCONNECTED · 原生语境不可用':'历史时刻未记录原生解读，禁止后来快照回填。';
   $('native-context-evidence').textContent='当前快照证据已隐藏，不能当作该时刻已知信息。';return;
  }
- if(!context){$('native-context').textContent='原生解读不可用：等待匹配的 EMA20 / RSI14；不回退本地计算。';$('native-context-evidence').textContent='尚无匹配证据';return}
+ if(!context){$('native-context').textContent='等待当前周期的原生指标。';$('native-context-evidence').textContent='尚无匹配证据';return}
  const rows=['来源：Robinhood 原生 · 源质量 / 暖机未知，仅供观察。'];
  if(context.reason)rows.push('当前不可用：'+context.reason);
- for(const [key,title] of [['ema20','EMA20'],['rsi14','RSI14']]){
+ for(const [key,title] of [['ema20','EMA20'],['vwap','VWAP'],['atr14','ATR14'],['rsi14','RSI14'],['pivot_points','Pivot 枢轴点'],['macd','MACD']]){
   const item=context[key];
-  if(item?.status==='AVAILABLE_SOURCE_UNKNOWN'){
-   const relation={above:'收盘高于均线',below:'收盘低于均线',equal:'收盘等于均线'}[item.relation];
-   rows.push(title+'：'+item.value+' · 原生可读（质量未知）'+(relation?' · '+relation:''));
+  if(!item)continue;
+  if(item.status==='AVAILABLE_SOURCE_UNKNOWN'){
+   const value=item.values?Object.entries(item.values).map(([field,number])=>field+' '+(number??'—')).join(' / '):(item.value??'—');
+   const relation={above:'收盘高于指标水平',below:'收盘低于指标水平',equal:'收盘等于指标水平'}[item.relation];
+   const details=[relation];
+   if(item.distance!=null)details.push('收盘差值 '+item.distance);
+   if(item.atr_multiple!=null)details.push(item.atr_multiple+' × ATR14');
+   if(item.histogram_delta!=null)details.push('柱值变化 '+item.histogram_delta);
+   rows.push([title+'：'+value,...details.filter(Boolean)].join(' · '));
    if(key==='rsi14')rows.push('RSI 仅描述数值，不代表必然反转。');
-  }else rows.push(title+'：不可用 · '+(item?.reason??context.reason??'缺少匹配原生值')+'；不回退本地值。');
+  }else rows.push(title+'：不可用 · '+(item.reason??context.reason??'缺少匹配原生值'));
  }
  rows.push('不是买卖指令；纯 K 线结构独立判断。');
  $('native-context').textContent=rows.join('\n');

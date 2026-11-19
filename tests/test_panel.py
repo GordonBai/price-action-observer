@@ -79,6 +79,11 @@ const ctx={document,URL,console,setInterval:()=>0,fetch:()=>{throw Error('not ca
 const bars=[0,1,2].map(n=>({time:`2026-11-17T14:3${n+1}:00Z`,open:10+n,high:12+n,low:9+n,close:11+n}));
 const events=[{id:'a',observed_at:bars[1].time,family:'inside_bar',status:'observed',anchors:{level:10},explanation:'<img src=x>',knowledge_references:[{title:'test',summary:'summary',counterexample:'counter',source_urls:['https://example.com','javascript:alert(1)'],sources:[{review_method:'sampled_frames',locator:'page 3',limitations:'audio not heard'}]}],uncertainty:'uncertain'},{id:'b',observed_at:bars[2].time,family:'double_bottom',status:'candidate'}];
 ctx.fixture={native_indicators:{slot_count:2,items:[{symbol:'T',indicator_type:'macd',requested:{interval:'5minute',parameters:{}},returned_params:{fast_period:12},status:'AVAILABLE_SOURCE_UNKNOWN',latest:{time:'2026-11-17T14:35:00Z',values:{macd:'-1.2',signal:'0',histogram:null}},received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]},{symbol:'T',indicator_type:'supertrend',requested:{interval:'5minute',parameters:{}},status:'ERROR',latest:null,received_at:'2026-11-17T14:36:00Z',source_quality:'unknown',warmup:'unknown',points:[]}]},streams:[{symbol:'T',timeframe:'1',source:'fixture',bars,events,state:{},native_interpretation:{status:'AVAILABLE_SOURCE_UNKNOWN',source_quality:'unknown',ema20:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'48.55',relation:'below'},rsi14:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'40.82',explanation:'原生 RSI14 为40.82；仅描述数值。'},generated_at:'2026-11-17T14:36:00Z'}}]};
+Object.assign(ctx.fixture.streams[0].native_interpretation,{
+ vwap:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'49.22'},
+ atr14:{status:'UNAVAILABLE'},
+ pivot_points:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'50',values:{pivot:'50',r1:'52.75',s1:'47.25'}}
+});
 vm.runInContext('snapshot=fixture;render()',ctx);
 function all(el,p){return [ ...(p(el)?[el]:[]), ...el.children.flatMap(x=>all(x,p)) ];}
 function countCandles(){return all(elements.chart,x=>x.attrs.class==='candle-body').length}
@@ -100,6 +105,10 @@ assert.equal(all(elements['chart-tooltip'],x=>x.tagName==='img').length,0,'toolt
 
 assert(elements['native-context'].textContent.includes('48.55'),'primary summary missing EMA value');
 assert(elements['native-context'].textContent.includes('低于'),'primary summary needs Chinese relation');
+for(const token of ['VWAP','49.22','ATR14','52.75','47.25']){
+ assert(elements['native-context'].textContent.includes(token),'intraday summary missing '+token);
+}
+assert(!elements['native-context'].textContent.includes('MACD'),'absent pack key should not render');
 assert(elements['native-context-evidence'].textContent.includes('generated_at'),'provenance must remain expandable');
 assert(JSON.stringify(elements['native-indicators']).includes('histogram'), 'native multi-fields missing');
 assert(JSON.stringify(elements['native-indicators']).includes('null'), 'null must not become zero');
@@ -136,6 +145,14 @@ vm.runInContext("renderChart([{time:'2026-11-18T00:00:00Z',open:10,high:12,low:9
 all(elements.chart,x=>x.attrs.class==='bar-hit-target')[0].listeners.focus();
 assert(elements['chart-tooltip'].textContent.includes('交易日 2026-11-17'),'daily label must not shift to availability day');
 assert(elements['chart-tooltip'].textContent.includes('保守可知时间'),'daily availability distinct');
+vm.runInContext("renderChart([{time:'2026-11-18T21:00:00+00:00',open:10,high:12,low:9,close:11}],{symbol:'SOXL',timeframe:'D'},[])",ctx);
+all(elements.chart,x=>x.attrs.class==='bar-hit-target')[0].listeners.focus();
+assert(elements['chart-tooltip'].textContent.includes('交易日 2026-11-18'),'canonical daily close uses NY session date');
+vm.runInContext("renderNativeContext({native_interpretation:{macd:{status:'AVAILABLE_SOURCE_UNKNOWN',value:'0.3',values:{macd:'0.8',signal:'0.5',histogram:'0.3'},histogram_delta:'0.5'}}})",ctx);
+for(const token of ['MACD','0.8','0.5','0.3']){
+ assert(elements['native-context'].textContent.includes(token),'daily summary missing '+token);
+}
+assert(!elements['native-context'].textContent.includes('undefined'),'native fields should display without undefined');
 (async()=>{
  let resolves=[];ctx.fetch=()=>new Promise(r=>resolves.push(r));
  const first=vm.runInContext('refresh()',ctx),second=vm.runInContext('refresh()',ctx);

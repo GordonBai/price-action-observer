@@ -16,6 +16,24 @@ class FakeNative:
         return IndicatorResult(tuple(series),(),({'request':{},'received_at':END},),dict(no_usable_symbols=[],normalization_supported=True,warmup='unknown',source_quality='unknown'),'robinhood:native',END)
 
 class NativeRuntimeTests(unittest.TestCase):
+    def test_context_preserves_wider_outputs_and_unrelated_specs(self):
+        from pa_lens.native_runtime import context_specs, native_specs
+
+        specs = native_specs(configuration=[
+            {'type': 'ema', 'parameters': {'period': 20}, 'output': 'series'},
+            {'type': 'atr', 'output': 'last:3'},
+            {'type': 'ema', 'output': 'latest'},
+            {'type': 'rsi', 'interval': 'minute'},
+        ])
+        for options in ({'enabled': False}, {'interval': '15minute'},
+                        {'interval': 'week'}, {'interval': 'day', 'bounds': 'extended'},
+                        {'bounds': 'trading'}):
+            self.assertEqual(context_specs(specs, **options), specs)
+        result = context_specs(specs, bounds='extended')
+        self.assertEqual(result[:4], specs)
+        self.assertEqual([s['output'] for s in result[:4]], ['series', 'last:3', 'latest', 'latest'])
+        self.assertEqual([s['type'] for s in result[4:]], ['vwap', 'rsi', 'pivot_points'])
+
     def test_all18_partial_failure_keeps_values_and_restart(self):
         from pa_lens.native_runtime import native_specs,acquire_native
         specs=native_specs('all',None,'5minute','latest')
