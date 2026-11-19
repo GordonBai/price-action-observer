@@ -109,34 +109,46 @@ class RobinhoodTests(unittest.TestCase):
         self.assertEqual(result.quality["duplicates"], 1)
         self.assertEqual(result.quality["out_of_range"], 1)
 
-    def test_unknown_interpolation_never_reaches_engine(self):
+    def test_omitted_interpolation_accepted_by_default_and_rejected_when_strict(self):
         row = bar("2026-11-17T15:00:00Z")
         del row["interpolated"]
-        result = self.fetch(Stub([row]))
-        self.assertFalse(result.bars)
-        self.assertEqual(result.quality["interpolation_unknown"], 1)
-        self.assertEqual(result.quality["not_interpolated"], 0)
-        self.assertEqual(result.quality["no_usable_symbols"], ["SOXL"])
-        self.assertEqual(len(result.raw_records), 1)
-
-    def test_exploratory_opt_in_keeps_unknown_provenance_and_rejects_true(self):
-        missing = bar("2026-11-17T15:00:00Z")
-        del missing["interpolated"]
-        filled = bar("2026-11-17T15:01:00Z", interpolated=True)
-        malformed = dict(bar("2026-11-17T15:02:00Z"), interpolated=None)
-        strict = self.fetch(Stub([missing, filled, malformed]))
-        opt_in = self.fetch(Stub([missing, filled, malformed]), accept_unknown=True)
+        default = self.fetch(Stub([row]))
+        self.assertEqual(len(default.bars), 1)
+        self.assertEqual(default.source, "robinhood:minute:regular:split")
+        self.assertEqual(default.bars[0].source, default.source)
+        self.assertEqual(default.quality["interpolation_omitted"], 1)
+        self.assertEqual(default.quality["omitted_emitted"], 1)
+        self.assertEqual(default.quality["interpolation_unknown"], 0)
+        self.assertEqual(default.quality["interpolation_omitted_opens"], {"SOXL": ["2026-11-17T15:00:00+00:00"]})
+        self.assertEqual(default.bar_provenance[0]["interpolation"], "omitted")
+        self.assertEqual(default.bar_provenance[0]["quality"], "INTERPOLATION_OMITTED")
+        strict = self.fetch(Stub([row]), strict_interpolation=True)
         self.assertFalse(strict.bars)
-        self.assertEqual(len(opt_in.bars), 1)
-        self.assertEqual(opt_in.source, strict.source + ":accept_unknown")
-        self.assertEqual(opt_in.bars[0].source, opt_in.source)
-        self.assertEqual(opt_in.quality["unknown_emitted"], 1)
-        self.assertEqual(opt_in.quality["status"], "DATA_QUALITY_UNKNOWN")
-        self.assertEqual(opt_in.bar_provenance[0]["interpolation"], "unknown")
-        self.assertEqual(opt_in.bar_provenance[0]["quality"], "DATA_QUALITY_UNKNOWN")
-        self.assertEqual(opt_in.bar_provenance[0]["time"], opt_in.bars[0].time)
-        self.assertEqual(opt_in.quality["interpolated"], 1)
-        self.assertEqual(opt_in.quality["interpolation_unknown"], 2)
+        self.assertEqual(strict.source, default.source + ":strict_interpolation")
+        self.assertEqual(strict.quality["interpolation_omitted"], 1)
+        self.assertEqual(strict.quality["omitted_emitted"], 0)
+        self.assertEqual(strict.quality["interpolation_unknown"], 0)
+        self.assertEqual(strict.quality["no_usable_symbols"], ["SOXL"])
+        self.assertEqual(len(strict.raw_records), 1)
+        with self.assertRaisesRegex(ValueError, "boolean"):
+            self.fetch(Stub([row]), strict_interpolation="yes")
+
+    def test_malformed_or_true_interpolation_always_rejected(self):
+        omitted = bar("2026-11-17T15:00:00Z")
+        del omitted["interpolated"]
+        filled = bar("2026-11-17T15:01:00Z", interpolated=True)
+        malformed_none = dict(bar("2026-11-17T15:02:00Z"), interpolated=None)
+        malformed_str = dict(bar("2026-11-17T15:02:00Z"), interpolated="false")
+        result = self.fetch(Stub([omitted, filled, malformed_none]))
+        self.assertEqual(len(result.bars), 1)
+        self.assertEqual(result.bars[0].time, "2026-11-17T15:01:00+00:00")
+        self.assertEqual(result.quality["interpolated"], 1)
+        self.assertEqual(result.quality["invalid"], 1)
+        self.assertEqual(result.quality["omitted_emitted"], 1)
+        self.assertEqual(result.quality["interpolation_unknown"], 0)
+        str_result = self.fetch(Stub([malformed_str]))
+        self.assertFalse(str_result.bars)
+        self.assertEqual(str_result.quality["invalid"], 1)
 
     def test_regular_session_and_minute_alignment(self):
         result = self.fetch(Stub([dict(bar("2026-11-17T15:00:00Z"), session="pre"),

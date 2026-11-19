@@ -20,6 +20,7 @@ from urllib.parse import urlsplit, parse_qs
 from .core import Bar, Engine, ENGINE_VERSION
 from .presentation import PresentationProjector
 from .journal_lock import JournalLock
+from .timeframes import is_daily_fresh
 
 MAX_BODY = 65536
 MAX_STREAMS = 64
@@ -143,8 +144,8 @@ class Journal:
         self._rebuild()
 
     def _new(self):
-        return {'engine': Engine(self.config), 'bars': deque(maxlen=240),
-                'display':PresentationProjector(**self.display_config), 'events': deque(maxlen=200), 'bar_count': 0, 'received_at': None}
+        return {'engine': Engine(self.config), 'bars': deque(maxlen=300),
+                'display':PresentationProjector(**self.display_config), 'events': deque(maxlen=500), 'bar_count': 0, 'received_at': None}
 
     def _apply(self, data, received_at, bar_seq=None):
         key = (data['symbol'], data['timeframe'], data['source'])
@@ -353,7 +354,7 @@ class Journal:
             item['provenance_count']=len(item['bar_provenance'])
             item['bar_provenance']=item['bar_provenance'][:20]
             item['batches_count']=len(item['batches']);item['batches']=item['batches'][:10]
-            for field in ('interpolated_opens','interpolation_unknown_opens'):
+            for field in ('interpolated_opens','interpolation_omitted_opens','interpolation_unknown_opens'):
                 item['quality'].pop(field,None)
             item['snapshot_truncated']=True
             result.append(item)
@@ -400,7 +401,15 @@ class Journal:
                 age = (now - _datetime(last['time'])).total_seconds()
                 seconds = int(timeframe) * 60 if timeframe.isdigit() else 86400
                 state = stream['engine'].snapshot()
-                freshness = 'FUTURE' if age < -5 else ('STALE' if age > max(120, seconds*2) else 'RECENT')
+                if age < -5:
+                    freshness = 'FUTURE'
+                elif timeframe == 'D':
+                    try:
+                        freshness = 'RECENT' if is_daily_fresh(_datetime(last['time']), now) else 'STALE'
+                    except ValueError:
+                        freshness = 'STALE' if age > max(120, seconds * 2) else 'RECENT'
+                else:
+                    freshness = 'STALE' if age > max(120, seconds * 2) else 'RECENT'
                 warm = state.get('bars_in_segment', 0) >= stream['engine'].config.min_history
                 readiness = freshness if freshness != 'RECENT' else ('READY_FOR_RESEARCH' if warm else 'WARMUP')
                 quality = self._data_quality((symbol, timeframe, source))
@@ -425,7 +434,7 @@ class Journal:
                 ready, readiness = False, 'DATA_REVIEW_REQUIRED'
             return {'native_indicators':self.native_snapshot(), 'acquisitions':self._acquisitions(), 'transport': transport, 'data_quality': quality, 'mode': 'research_only', 'live_verified': False, 'ready': ready, 'readiness': readiness,
                     'rule_identity': dict(self.identity), 'streams': result,
-                    'notice': 'Robinhood 主动只读获取；DATA_QUALITY_UNKNOWN 表示插值标记缺失，探索结果不可当已验证信号。本地 EMA/RSI 独立计算，不等于供应商指标。日线时间为保守的下一 UTC 午夜可用时刻。存在隔离修订或迟到数据时，解释基于首次接收版K线且未重算，须另库复核，不应依赖其结构判断。接收器不是行情供应商；RECENT仅表示提交的时间戳接近当前，不代表已验证实时报价。收市时历史bar会显示STALE。'}
+                    'notice': 'Robinhood 主动只读获取；默认接受省略 interpolated 字段的原始K线并记录 INTERPOLATION_OMITTED 溯源（显式 interpolated=true 或无效标记一律拒绝；可用 --strict-interpolation 严格拒绝省略）。本地 EMA/RSI 独立计算，不等于供应商指标。日线时间为 XNYS 交易日实际收盘时刻（常规 16:00 ET / 提前收盘日 13:00 ET）。存在隔离修订或迟到数据时，解释基于首次接收版K线且未重算，须另库复核，不应依赖其结构判断。接收器不是行情供应商；RECENT仅表示K线符合当前时段/日历新鲜度，不代表已验证实时报价。'}
 
     def health(self, now=None):
         result = self.snapshot(now)

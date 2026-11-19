@@ -14,34 +14,82 @@ def provider(flag='missing'):
     return RobinhoodProvider(transport,clock=lambda:NOW)
 
 class RuntimeTests(unittest.TestCase):
-    def fetch(self, journal, flag='missing', accept=False):
+    def fetch(self, journal, flag='missing', strict=False):
         from pa_lens.rh_runtime import acquire
-        return acquire(provider(flag),journal,['SOXL'],'2026-11-17T14:30:00Z','2026-11-17T15:00:00Z',accept_unknown=accept)
-    def test_unknown_is_persistently_not_ready(self):
+        return acquire(provider(flag),journal,['SOXL'],'2026-11-17T14:30:00Z','2026-11-17T15:00:00Z',strict_interpolation=strict)
+    def test_omitted_markers_achieve_ready_for_research_when_warm(self):
+        from pa_lens.rh_runtime import acquire, aggregate_fifteen, quality_status
+        from tests.test_robinhood import Stub, bar
+        rows = [bar(f'2026-11-18T14:{m:02d}:00Z') for m in range(54, 60)]
+        for row in rows:
+            del row['interpolated']
+        warm_provider = RobinhoodProvider(Stub(rows), clock=lambda: NOW)
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'x.db'; j=Journal(path)
             try:
-                report=self.fetch(j,accept=True)
-                self.assertEqual(report['ingested'],1)
+                report=acquire(warm_provider,j,['SOXL'],'2026-11-18T14:54:00Z','2026-11-18T15:00:00Z')
+                self.assertEqual(report['ingested'],6)
+                self.assertEqual(report['status'],'ELIGIBLE_OBSERVATIONS')
                 snap=j.snapshot(NOW)
-                self.assertEqual(snap['data_quality']['status'],'DATA_QUALITY_UNKNOWN')
-                self.assertFalse(snap['ready'])
-                self.assertEqual(snap['acquisitions'][0]['bar_provenance'][0]['quality'],'DATA_QUALITY_UNKNOWN')
+                self.assertTrue(snap['ready'])
+                self.assertEqual(snap['readiness'],'READY_FOR_RESEARCH')
+                self.assertIsNone(snap['data_quality']['acquisition_status'])
+                self.assertEqual(snap['acquisitions'][0]['bar_provenance'][0]['interpolation'],'omitted')
+                self.assertEqual(snap['acquisitions'][0]['bar_provenance'][0]['quality'],'INTERPOLATION_OMITTED')
+                self.assertNotIn('interpolation_omitted_opens', snap['acquisitions'][0]['quality'])
             finally:j.close()
             j=Journal(path)
             try:
-                self.assertEqual(j.health(NOW)['data_quality']['status'],'DATA_QUALITY_UNKNOWN')
-                self.assertFalse(j.health(NOW)['ready'])
+                self.assertTrue(j.health(NOW)['ready'])
+                self.assertEqual(j.health(NOW)['readiness'],'READY_FOR_RESEARCH')
             finally:j.close()
-    def test_strict_unknown_and_true_never_become_bars(self):
-        for flag,accept,status in [('missing',False,'DATA_QUALITY_UNKNOWN'),(True,True,'NO_USABLE_BARS')]:
+        five_rows = [bar(f'2026-11-18T14:{m}:00Z') for m in ('30', '35', '40')]
+        for row in five_rows:
+            del row['interpolated']
+        derived = aggregate_fifteen(RobinhoodProvider(Stub(five_rows), clock=lambda: NOW).fetch(
+            ['SOXL'], '2026-11-18T14:30:00Z', '2026-11-18T15:00:00Z', interval='5minute'))
+        self.assertEqual(len(derived.bars), 1)
+        self.assertEqual(derived.bar_provenance[0]['interpolation'], 'omitted')
+        self.assertEqual(derived.bar_provenance[0]['quality'], 'INTERPOLATION_OMITTED')
+        self.assertEqual(quality_status(derived.quality), 'ELIGIBLE_OBSERVATIONS')
+
+    def test_malformed_or_true_interpolation_always_rejected_and_marks_partial(self):
+        from pa_lens.rh_runtime import acquire, quality_status
+        from tests.test_robinhood import Stub, bar
+        omitted = bar('2026-11-18T14:58:00Z'); del omitted['interpolated']
+        filled = bar('2026-11-18T14:59:00Z', interpolated=True)
+        malformed = dict(bar('2026-11-18T14:57:00Z'), interpolated=None)
+        p_partial = RobinhoodProvider(Stub([omitted, filled]), clock=lambda: NOW)
+        j = Journal(':memory:')
+        try:
+            report = acquire(p_partial, j, ['SOXL'], '2026-11-18T14:57:00Z', '2026-11-18T15:00:00Z')
+            self.assertEqual(report['ingested'], 1)
+            self.assertEqual(report['quality']['interpolated'], 1)
+            self.assertEqual(report['status'], 'PARTIAL_DATA')
+            self.assertEqual(quality_status(report['quality']), 'PARTIAL_DATA')
+            self.assertFalse(j.snapshot(NOW)['ready'])
+        finally: j.close()
+        j = Journal(':memory:')
+        try:
+            bad = self.fetch(j, None, strict=False)
+            self.assertEqual(bad['ingested'], 0)
+            self.assertEqual(bad['quality']['invalid'], 1)
+            self.assertEqual(bad['status'], 'NO_USABLE_BARS')
+        finally: j.close()
+
+    def test_strict_omitted_and_true_never_become_bars(self):
+        from pa_lens.rh_runtime import quality_status, source_identity
+        for flag,strict,status in [('missing',True,'NO_USABLE_BARS'),(True,False,'NO_USABLE_BARS')]:
             j=Journal(':memory:')
             try:
-                report=self.fetch(j,flag,accept)
+                report=self.fetch(j,flag,strict)
                 self.assertEqual(report['ingested'],0)
                 self.assertEqual(j.snapshot()['streams'],[])
                 self.assertEqual(j.snapshot()['data_quality']['status'],status)
             finally:j.close()
+        self.assertEqual(quality_status(dict(emitted=1, interpolation_omitted=1, strict_interpolation=True)), 'PARTIAL_DATA')
+        with self.assertRaisesRegex(ValueError, 'boolean'):
+            source_identity('minute', strict_interpolation='yes')
     def test_explicit_false_and_duplicates(self):
         j=Journal(':memory:')
         try:
@@ -58,7 +106,7 @@ class RuntimeTests(unittest.TestCase):
         import subprocess,sys
         result=subprocess.run([sys.executable,'-m','pa_lens','fetch-robinhood','--help'],capture_output=True,text=True)
         self.assertEqual(result.returncode,0)
-        for option in ('--symbols','--start','--end','--interval','--accept-unknown'):self.assertIn(option,result.stdout)
+        for option in ('--symbols','--start','--end','--interval','--strict-interpolation','--accept-unknown'):self.assertIn(option,result.stdout)
         from unittest.mock import patch
         from contextlib import redirect_stderr
         from io import StringIO
@@ -116,8 +164,8 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(next_poll_delay(datetime(2026,11,17,21,0,5,tzinfo=timezone.utc),'day',10),5)
         self.assertEqual(next_poll_delay(datetime(2026,11,17,21,0,10,tzinfo=timezone.utc),'day',10),86400)
 
-    def test_fifteen_missing_cross_session_and_unknown(self):
-        from pa_lens.rh_runtime import aggregate_fifteen
+    def test_fifteen_missing_cross_session_and_omitted(self):
+        from pa_lens.rh_runtime import aggregate_fifteen, quality_status
         from tests.test_robinhood import Stub,bar
         rows=[bar('2026-11-17T14:30:00Z'),bar('2026-11-17T14:40:00Z'),bar('2026-11-18T14:35:00Z')]
         p=RobinhoodProvider(Stub(rows),clock=lambda:NOW)
@@ -126,20 +174,26 @@ class RuntimeTests(unittest.TestCase):
         rows=[bar(f'2026-11-17T14:{m}:00Z') for m in ('30','35','40')]
         for row in rows:row.pop('interpolated')
         p=RobinhoodProvider(Stub(rows),clock=lambda:NOW)
-        result=aggregate_fifteen(p.fetch(['SOXL'],'2026-11-17T14:30:00Z','2026-11-17T15:00:00Z',interval='5minute',accept_unknown=True))
-        self.assertTrue(result.source.endswith(':accept_unknown'))
-        self.assertEqual(result.bar_provenance[0]['quality'],'DATA_QUALITY_UNKNOWN')
+        result=aggregate_fifteen(p.fetch(['SOXL'],'2026-11-17T14:30:00Z','2026-11-17T15:00:00Z',interval='5minute'))
+        self.assertFalse(result.source.endswith(':strict_interpolation'))
+        self.assertEqual(result.bar_provenance[0]['interpolation'],'omitted')
+        self.assertEqual(result.bar_provenance[0]['quality'],'INTERPOLATION_OMITTED')
+        self.assertEqual(quality_status(result.quality),'ELIGIBLE_OBSERVATIONS')
+        strict=aggregate_fifteen(p.fetch(['SOXL'],'2026-11-17T14:30:00Z','2026-11-17T15:00:00Z',interval='5minute',strict_interpolation=True))
+        self.assertEqual(strict.bars,())
+        self.assertTrue(strict.source.endswith(':strict_interpolation'))
+        self.assertEqual(quality_status(strict.quality),'NO_USABLE_BARS')
 
     def test_poll_window_catches_up_without_repulling_all_daily_history(self):
         from pa_lens.rh_runtime import poll_start
         self.assertEqual(poll_start(NOW,'minute',120,['2026-11-17T15:00:00Z']),datetime(2026,11,17,13,tzinfo=timezone.utc))
         self.assertEqual((NOW-poll_start(NOW,'day',120,['2026-11-18T00:00:00Z'])).days,7)
 
-    def test_unknown_and_revision_flags_survive_restart(self):
+    def test_omitted_and_revision_flags_survive_restart(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'quality.db';j=Journal(path)
             try:
-                self.fetch(j,accept=True)
+                self.fetch(j,'missing',strict=False)
                 payload=dict(j.snapshot()['streams'][0]['bars'][0]);payload['close']=10.6
                 j.ingest_observation(payload)
                 payload['time']='2026-11-17T14:32:00Z';payload['close']=10.9
@@ -147,7 +201,7 @@ class RuntimeTests(unittest.TestCase):
                 events=j.snapshot()['streams'][0]['events']
                 flagged=[e for e in events if 'known_revision_or_late_data' in e.get('data_quality_flags',[])]
                 self.assertTrue(flagged)
-                self.assertTrue(all(e['data_quality']=='DATA_QUALITY_UNKNOWN' for e in flagged))
+                self.assertTrue(all(e['data_quality']=='known_revision_or_late_data' for e in flagged))
             finally:j.close()
             j=Journal(path)
             try:self.assertEqual(events,j.snapshot()['streams'][0]['events'])
@@ -175,11 +229,12 @@ class RuntimeTests(unittest.TestCase):
         rows=[bar('2026-11-27T'+t+'Z') for t in ('17:45:00','17:50:00','17:55:00','18:00:00','18:05:00','18:10:00')]
         for row in rows:row.pop('interpolated')
         p=RobinhoodProvider(Stub(rows),clock=lambda:datetime(2026,11,28,tzinfo=timezone.utc))
-        r=aggregate_fifteen(p.fetch(['SOXL'],'2026-11-27T17:45:00Z','2026-11-27T19:00:00Z',interval='5minute',accept_unknown=True))
+        r=aggregate_fifteen(p.fetch(['SOXL'],'2026-11-27T17:45:00Z','2026-11-27T19:00:00Z',interval='5minute'))
         self.assertEqual(len(r.bars),1)
         self.assertEqual(r.bars[0].time,'2026-11-27T18:00:00+00:00')
-        self.assertEqual(r.quality['derived_unknown_emitted'],1)
-        self.assertEqual(r.quality['unknown_emitted'],6)
+        self.assertEqual(r.quality['derived_omitted_emitted'],1)
+        self.assertEqual(r.quality['omitted_emitted'],6)
+        self.assertEqual(r.quality['derived_unknown_emitted'],0)
 
     def test_added_daily_symbol_gets_bootstrap_history(self):
         from pa_lens.rh_runtime import poll_start

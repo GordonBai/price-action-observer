@@ -8,36 +8,41 @@ import json
 from .robinhood import INTERVAL_MINUTES, RobinhoodError
 
 
-def source_identity(interval, bounds='regular', adjustment_type='split', accept_unknown=False):
+def source_identity(interval, bounds='regular', adjustment_type='split', strict_interpolation=False):
+    if type(strict_interpolation) is not bool:
+        raise ValueError('strict_interpolation must be a boolean')
     period='15minute-derived-5minute' if interval=='15minute' else interval
-    return f'robinhood:{period}:{bounds}:{adjustment_type}'+(':accept_unknown' if accept_unknown else '')
+    return f'robinhood:{period}:{bounds}:{adjustment_type}'+(':strict_interpolation' if strict_interpolation else '')
 
 
 def quality_status(quality):
+    if quality.get('strict_interpolation') and quality.get('interpolation_omitted') and not quality.get('emitted'):
+        return 'NO_USABLE_BARS'
     if quality.get('interpolation_unknown', 0):
         return 'DATA_QUALITY_UNKNOWN'
     if not quality.get('emitted', 0):
         return 'NO_USABLE_BARS'
-    if any(quality.get(k) for k in ('invalid','interpolated','missing_results','no_usable_symbols','out_of_range','incomplete_derived_buckets')):
+    if (quality.get('strict_interpolation') and quality.get('interpolation_omitted')) or any(
+            quality.get(k) for k in ('invalid','interpolated','missing_results','no_usable_symbols','out_of_range','incomplete_derived_buckets')):
         return 'PARTIAL_DATA'
     return 'ELIGIBLE_OBSERVATIONS'
 
 
 def acquire(provider, journal, symbols, start, end, *, interval='minute', bounds='regular',
-            adjustment_type='split', accept_unknown=False, capture_dir=None, include_quotes=False):
+            adjustment_type='split', strict_interpolation=False, capture_dir=None, include_quotes=False):
     if capture_dir:
         path=Path(capture_dir).expanduser().resolve()
         # Captures may contain licensed market data: never place in a tracked tree.
         repo=Path(__file__).resolve().parents[1]
         if path==repo or (repo in path.parents and repo/'local_data' not in (path,*path.parents)):
             raise ValueError('captures inside project must use ignored local_data/')
-    source=source_identity(interval,bounds,adjustment_type,accept_unknown)
+    source=source_identity(interval,bounds,adjustment_type,strict_interpolation)
     timeframe='15' if interval=='15minute' else str(INTERVAL_MINUTES.get(interval, 'D'))
     actual_interval='5minute' if interval=='15minute' else interval
     if interval=='15minute' and bounds!='regular':raise ValueError('derived 15minute requires regular bounds')
     try:
         result=provider.fetch(symbols,start,end,interval=actual_interval,bounds=bounds,
-                              adjustment_type=adjustment_type,accept_unknown=accept_unknown)
+                              adjustment_type=adjustment_type,strict_interpolation=strict_interpolation)
     except (RobinhoodError,ValueError):
         for symbol in symbols:
             journal.record_transport(source,symbol,'error',datetime.now(timezone.utc),0,timeframe=timeframe)
@@ -104,13 +109,16 @@ def aggregate_fifteen(result):
         bars.append(Bar(symbol,'15',closed,parts[0].open,max(b.high for b in parts),min(b.low for b in parts),parts[-1].close,sum(b.volume for b in parts),source))
         inputs=[provenance[(b.symbol,b.time)] for b in parts]
         unknown=any(p['quality']=='DATA_QUALITY_UNKNOWN' for p in inputs)
+        omitted=any(p['quality']=='INTERPOLATION_OMITTED' for p in inputs)
+        bar_quality='DATA_QUALITY_UNKNOWN' if unknown else ('INTERPOLATION_OMITTED' if omitted else 'INTERPOLATION_EXPLICIT_FALSE')
+        bar_interp='unknown' if unknown else ('omitted' if omitted else 'explicit_false')
         out_provenance.append(dict(symbol=symbol,time=closed,opened_at=opened.astimezone(timezone.utc).isoformat(),
             session_date=label,derived_from='5minute',input_bar_closes=[b.time for b in parts],
-            input_provenance=inputs,quality='DATA_QUALITY_UNKNOWN' if unknown else 'INTERPOLATION_EXPLICIT_FALSE',
-            interpolation='unknown' if unknown else 'explicit_false'))
+            input_provenance=inputs,quality=bar_quality,interpolation=bar_interp))
     quality=dict(result.quality,source_bars_emitted=result.quality['emitted'],emitted=len(bars),
                  incomplete_derived_buckets=incomplete,derived_from='5minute',
                  derived_unknown_emitted=sum(p['quality']=='DATA_QUALITY_UNKNOWN' for p in out_provenance),
+                 derived_omitted_emitted=sum(p['quality']=='INTERPOLATION_OMITTED' for p in out_provenance),
                  source_quality_count_unit='five_minute_input_bars',derived_count_unit='fifteen_minute_bars')
     quality['no_usable_symbols']=sorted({row['symbol'] for row in result.raw_records}-{bar.symbol for bar in bars})
     return replace(result,bars=tuple(bars),bar_provenance=tuple(out_provenance),source=source,quality=quality)

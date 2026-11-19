@@ -170,6 +170,20 @@ class JournalTests(unittest.TestCase):
         self.assertGreater(health['streams'][0]['age_seconds'], 3600)
         self.assertFalse(health['live_verified'])
 
+    def test_daily_snapshot_uses_calendar_freshness_and_retains_300_bars(self):
+        from pa_lens.timeframes import daily_close
+        for d in ('2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13'):
+            self.journal.ingest(dict(symbol='SOXL', timeframe='D', time=daily_close(d).isoformat(),
+                                     open=10.0, high=11.0, low=9.0, close=10.5, volume=100, source='test'))
+        sunday = self.journal.snapshot(datetime(2026, 11, 16, 1, 0, tzinfo=timezone.utc))
+        self.assertEqual(sunday['streams'][0]['freshness'], 'RECENT')
+        self.assertTrue(sunday['ready'])
+        monday_late = self.journal.snapshot(datetime(2026, 11, 16, 23, 30, tzinfo=timezone.utc))
+        self.assertEqual(monday_late['streams'][0]['freshness'], 'STALE')
+        self.assertFalse(monday_late['ready'])
+        self.assertEqual(self.journal.streams[('SOXL', 'D', 'test')]['bars'].maxlen, 300)
+        self.assertEqual(self.journal.streams[('SOXL', 'D', 'test')]['events'].maxlen, 500)
+
 
 class HttpTests(unittest.TestCase):
     def setUp(self):

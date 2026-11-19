@@ -202,10 +202,10 @@ class RobinhoodProvider:
                                  "response_sha256": response_hash}
 
     def fetch(self, symbols, start, end, *, interval="minute", bounds="regular",
-              adjustment_type="split", accept_unknown=False):
+              adjustment_type="split", strict_interpolation=False):
         """Read original OHLCV; return only provably closed, usable closed bars."""
-        if type(accept_unknown) is not bool:
-            raise ValueError("accept_unknown must be a boolean")
+        if type(strict_interpolation) is not bool:
+            raise ValueError("strict_interpolation must be a boolean")
         names = _symbols(symbols)
         _options(interval, bounds, adjustment_type)
         start, end = _time(start), _time(end)
@@ -218,19 +218,21 @@ class RobinhoodProvider:
             raise ValueError("Robinhood query exceeds maximum batch count; narrow the range or symbols")
         cutoff = min(end, _time(self._clock()))
         source = f"robinhood:{interval}:{bounds}:{adjustment_type}"
-        if accept_unknown:
-            source += ":accept_unknown"
+        if strict_interpolation:
+            source += ":strict_interpolation"
         minutes = INTERVAL_MINUTES.get(interval)
         duration = None if minutes is None else timedelta(minutes=minutes)
         bars, raw, batches = [], [], []
         provenance = {}
         counts = ("received", "emitted", "interpolated", "invalid", "incomplete",
                   "duplicates", "out_of_range",
-                  "not_interpolated", "interpolation_unknown", "unknown_emitted")
+                  "not_interpolated", "interpolation_omitted", "omitted_emitted",
+                  "interpolation_unknown")
         quality = dict.fromkeys(counts, 0)
-        quality.update({"interpolated_opens": {}, "interpolation_unknown_opens": {}, "missing_results": [],
+        quality.update({"interpolated_opens": {}, "interpolation_omitted_opens": {},
+                        "interpolation_unknown_opens": {}, "missing_results": [],
                         "no_usable_symbols": [], "daily_normalization_supported": True,
-                        "accept_unknown": accept_unknown})
+                        "strict_interpolation": strict_interpolation})
         seen = {}
 
         left = start
@@ -274,16 +276,19 @@ class RobinhoodProvider:
                             local["duplicates"] += 1
                             continue
                         seen[key] = fingerprint
-                        if item.get("interpolated") is True:
+                        omitted = "interpolated" not in item
+                        if omitted:
+                            local["interpolation_omitted"] += 1
+                            quality["interpolation_omitted_opens"].setdefault(symbol, []).append(opened.isoformat())
+                            if strict_interpolation:
+                                continue
+                        elif type(item["interpolated"]) is not bool:
+                            local["invalid"] += 1
+                            continue
+                        elif item["interpolated"] is True:
                             local["interpolated"] += 1
                             quality["interpolated_opens"].setdefault(symbol, []).append(opened.isoformat())
                             continue
-                        unknown = item.get("interpolated") is not False
-                        if unknown:
-                            local["interpolation_unknown"] += 1
-                            quality["interpolation_unknown_opens"].setdefault(symbol, []).append(opened.isoformat())
-                            if not accept_unknown or "interpolated" in item:
-                                continue
                         else:
                             local["not_interpolated"] += 1
                         if (opened.second or opened.microsecond
@@ -309,11 +314,11 @@ class RobinhoodProvider:
                             "symbol": symbol, "time": normalized.time, "opened_at": opened.isoformat(),
                             "batch": index, "session": item.get("session"),
                             **({"session_date": opened.date().isoformat()} if minutes is None else {}),
-                            "interpolation": "unknown" if unknown else "explicit_false",
-                            "quality": "DATA_QUALITY_UNKNOWN" if unknown else "INTERPOLATION_EXPLICIT_FALSE",
+                            "interpolation": "omitted" if omitted else "explicit_false",
+                            "quality": "INTERPOLATION_OMITTED" if omitted else "INTERPOLATION_EXPLICIT_FALSE",
                         }
                         local["emitted"] += 1
-                        local["unknown_emitted"] += int(unknown)
+                        local["omitted_emitted"] += int(omitted)
                 missing = sorted(set(group) - delivered)
                 if missing:
                     quality["missing_results"].append({"batch": index, "symbols": missing})
@@ -323,11 +328,13 @@ class RobinhoodProvider:
                     quality[key] += count
             left = right
         quality["no_usable_symbols"] = sorted(set(names) - {bar.symbol for bar in bars})
-        for field in ("interpolated_opens", "interpolation_unknown_opens"):
+        for field in ("interpolated_opens", "interpolation_omitted_opens", "interpolation_unknown_opens"):
             for opens in quality[field].values():
                 opens.sort()
         bars.sort(key=lambda bar: (bar.time, bar.symbol))
-        quality["status"] = ("DATA_QUALITY_UNKNOWN" if quality["interpolation_unknown"]
+        quality["status"] = ("INTERPOLATION_OMITTED_REJECTED"
+                             if strict_interpolation and quality["interpolation_omitted"]
+                             else "INTERPOLATION_OMITTED_ACCEPTED" if quality["interpolation_omitted"]
                              else "NO_UNKNOWN_INTERPOLATION_MARKERS")
         return FetchResult(tuple(bars), tuple(raw), tuple(batches), quality, source, cutoff.isoformat(),
                            tuple(provenance[(b.symbol, b.time)] for b in bars))

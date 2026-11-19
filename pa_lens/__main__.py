@@ -34,7 +34,8 @@ def main(argv=None):
         rh.add_argument('--interval',choices=['minute','5minute','10minute','15minute','30minute','hour','4hour','day'],default='minute')
         rh.add_argument('--bounds',choices=['regular','extended','trading','24_5','24_7','hyper_trading'],default='regular')
         rh.add_argument('--adjustment',choices=['none','split','all'],default='split')
-        rh.add_argument('--accept-unknown',action='store_true',help='exploratory only: unknown interpolation, ready=false')
+        rh.add_argument('--strict-interpolation',action='store_true',help='reject bars that omit the interpolated marker')
+        rh.add_argument('--accept-unknown',action='store_true',help='deprecated no-op: omitted interpolated markers are accepted by default')
         rh.add_argument('--infra-root',help='existing installed Robinhood trading infra; never copies credentials')
         rh.add_argument('--codex-binary',default='codex');rh.add_argument('--timeout',type=float,default=30)
         rh.add_argument('--db',default='local_data/robinhood-v07.sqlite3')
@@ -153,7 +154,7 @@ def _run_robinhood(args,parser):
     server=None
     output=terminal_output(getattr(args,'output',None),sys.stdout) if args.command=='poll-robinhood' else 'jsonl'
     terminal=TerminalMonitor(args.symbols) if output in ('text','tui') else None
-    source=source_identity(args.interval,args.bounds,args.adjustment,args.accept_unknown)
+    source=source_identity(args.interval,args.bounds,args.adjustment,args.strict_interpolation)
     tui=TuiClock(sys.stdout,source=source,symbols=args.symbols,fixed_end=bool(args.end)) if output=='tui' else None
     try:
         if specs and native_start is None:
@@ -176,7 +177,7 @@ def _run_robinhood(args,parser):
                 try:
                     for symbols,start in windows:
                         result=acquire(provider,journal,symbols,start,end,interval=args.interval,bounds=args.bounds,
-                            adjustment_type=args.adjustment,accept_unknown=args.accept_unknown,capture_dir=args.capture_dir,include_quotes=args.quotes)
+                            adjustment_type=args.adjustment,strict_interpolation=args.strict_interpolation,capture_dir=args.capture_dir,include_quotes=args.quotes)
                         if specs:result['provider_indicators']='SEPARATE_NATIVE_REQUESTS_FOLLOW'
                         if terminal:receipts.append((symbols,result))
                         else:print(json.dumps(result,ensure_ascii=False),flush=True)
