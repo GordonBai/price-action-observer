@@ -15,7 +15,7 @@
 基于 [AI Agent Lens](https://github.com/roan-maverick/tradingview-indicator-for-ai-agents) 扩展的 **Robinhood MCP 只读看盘系统**。逐根处理已闭合 K 线，识别部分 Brooks 风格 PA 结构，以中文说明证据与不确定性。
 
 - **终端监控**：行情、原生指标、PA观察、数据质量四区，显示纽约时钟与行情新鲜度。
-- **原生优先语境**：当前解读使用匹配的 Robinhood EMA20 / RSI14；不可用就明确说明，**绝不悄悄改用本地值**。
+- **原生优先语境**：当前解读显示与最新收盘 K 线匹配的 Robinhood 指标及其可用状态。
 - **价格结构**：双底/双顶、颈线确认、measured move、内外包、突破观察及有边界的启发式生命周期。
 - **回放与核对**：因果事件流水、可重启 SQLite 日志、图上悬停读数与历史事件定位。
 - **44张来源知识卡**，不是44个全部实现的检测器。`probability=null`，不编造胜率。
@@ -49,29 +49,34 @@ export RH_INFRA="$HOME/robinhood-trading-infra"
 python -m pa_lens wizard
 ```
 
-macOS 也可双击 [`Start-Monitor.command`](Start-Monitor.command)。启动器选择已有 Python 环境，不会安装软件。向导逐项询问股票、周期、市场时段、调度、有限/无限轮数、质量策略、infra位置及**新**日志，预览命令后确认才开始。
-
-默认：**NVDA · 5m · regular · 30秒 · 10轮 · 严格质量**。只有显式输入 `y` 才探索 UNKNOWN。设置期间输入 `q`、EOF 或 Ctrl-C 取消；运行后 Ctrl-C 停止。非 TTY 输入/输出立即报错，不会卡在交互问题上。[完整终端/向导说明](docs/TERMINAL_MONITOR.md)。
-
-> **严格模式为何可能没有 K 线？** 实测近期 Robinhood 响应缺少插值标记。缺失只能叫未知，不能当成已验证真实数据；严格模式会排除。显式探索仍保留 `DATA_QUALITY_UNKNOWN`、`ready=false`，正成交量不能证明没有插值。
+macOS 可双击 [`Start-Monitor.command`](Start-Monitor.command)，用已有的 Python 环境启动向导。选择 `monitor` 持续监控（默认 NVDA、5m、常规时段、30 秒、10 轮），或选择 `swing` 单次扫描日线。两种模式都预览命令并等待确认。输入 `q`、EOF 或 Ctrl-C 可取消设置。向导需要交互式 TTY。[终端与向导说明](docs/TERMINAL_MONITOR.md)
 
 ### 3. 或直接运行有限轮数
 ```bash
 python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" \
   --symbols NVDA --interval 5minute --bounds regular \
   --poll-seconds 30 --count 2 --output tui \
-  --db local_data/nvda-strict-demo.sqlite3
+  --db local_data/nvda-monitor.sqlite3
 ```
 
-只有明确接受未知质量探索时才加 `--accept-unknown`，并使用另一个新数据库。`--output text` 输出完整可读文本，`--output jsonl` 用于脚本。一个进程处理一个周期、多只标的；不同进程使用不同日志。代码/配置身份变化后旧库会被拒绝，不静默迁移。最新多标的原生质量修正也计入身份，需要新日志；既有私有数据保留，不承诺自动迁移或重算。
+默认接收省略 `interpolated` 字段的合格 K 线，并记录 `INTERPOLATION_OMITTED` 溯源。显式 `true` 或格式错误的标记一律拒绝。加 `--strict-interpolation` 也会排除省略标记的记录。fetch/poll 的 `--accept-unknown` 已弃用，仅保留兼容。使用 `--output text` 查看完整内容，或用 `--output jsonl` 接入脚本。每个监控进程需要独立日志，代码或配置变化后可能需要新库。
 
 TUI 时钟每秒刷新，**不代表每秒请求行情**。人类可读的当前时钟、拉取/接收、K线与事件时间均使用完整纽约日期和 **EST/EDT**；存储及 JSONL 仍为 UTC。时钟在走不等于报价更新。初始历史、保留旧bar与本轮新观察分开显示。`--align-close --settle-seconds 10` 让后续轮次按周期边界调度，首轮立即请求。它是 getter 轮询，不是交易所推流，也没有无人值守长期运行保证。
 
+## 日线波段扫描
+
+```bash
+python -m pa_lens swing --infra-root "$RH_INFRA" --symbols SPY QQQ NVDA --output text
+python -m pa_lens swing --input daily-bars.jsonl --focus-bars 25
+```
+
+在线扫描默认请求最近 250 个自然日的 XNYS 常规时段、拆股复权日线，重点显示最近 25 根交易日 K 线内的结构。离线 JSONL/CSV 接受已收盘的 `D` K 线，默认扫描文件内全部数据流，可用 `--symbols` 筛选。日志默认保存在内存中。报告提供市场语境、结构状态与参考价位，`probability=None`，仅供研究。终端默认输出文本，管道默认输出 JSONL。[波段扫描参数与输入格式](docs/ROBINHOOD.md#daily-swing-observations-and-local-indicators)
+
 ## 原生指标与价格结构
 ### 当前原生优先解读
-fetch/poll 默认自动请求 **EMA20、RSI14**，计入64次原生请求预算。`--no-native-context` 关闭自动请求，但不会开启本地回退。
+支持的 Robinhood 盘中周期默认请求 **EMA20、VWAP、ATR14、RSI14 和经典 Pivot**。常规时段日线的 fetch/poll 与在线 swing 默认请求 **EMA20、ATR14、RSI14 和 MACD（12、26、9）**。可用 `--no-native-context` 跳过自动请求。
 
-要求标的、周期、bounds、复权、实际参数与最新K线有效收盘时间匹配。EMA9 不替代 EMA20。缺失、部分失败、未定义、错误、不匹配或过期时明确不可用。数值年龄和接收年龄分别显示；新鲜度阈值为 `max(120秒, 2×周期)`，日线为保守48小时，休市也不自动放宽。已知修订/迟到会阻止拿未重算的首次close进行比较。原生源质量与暖机仍未知。
+要求标的、周期、bounds、复权、实际参数与最新K线有效收盘时间匹配。EMA9 不替代 EMA20。缺失、部分失败、未定义、错误、不匹配或过期时明确不可用。数值年龄和接收年龄分别显示；盘中新鲜度阈值为 `max(120秒, 2×周期)`，日线按 XNYS 日历判断，留出收盘后两小时宽限期。已知修订/迟到会阻止拿未重算的首次close进行比较。原生源质量与暖机仍未知。
 
 纯价格结构独立工作。本地 EMA20 / RSI14 / 均值TR仅用于诊断，不当替代。`ema_gap`、`ema_first_return` 保留审计，标为 `LOCAL_DIAGNOSTIC`，主分组不展示。当前原生语境在快照读取时生成；历史定位绝不把后来收到的指标回填过去。
 
@@ -107,9 +112,9 @@ python knowledge/kb.py search "双底"
 ## 数据质量与时间边界
 | 项目 | 契约 |
 |---|---|
-| 插值 | 明确true始终排除；字段缺失必须显式UNKNOWN探索才能使用。 |
+| 插值 | 字段省略默认接收并记录溯源；显式 true 或格式错误一律排除。严格模式也排除省略。 |
 | 修订/迟到 | 保留首次事件流水，将变化或迟到数据隔离并降低就绪状态，不静默重算历史。 |
-| 日线swing | XNYS日历，跨周末/假日连续，缺预期交易日则重置。每日数据在**下一UTC午夜**保守可知，不是开盘时或交易所收市时已知。 |
+| 日线swing | XNYS日历，跨周末/假日连续，缺预期交易日则重置。日线采用 XNYS 实际收盘时间，常规为 **16:00 ET**，计划提前收盘日为 **13:00 ET**。 |
 | 派生15m | 原生5m输入，同日完整连续三根、纽约09:30对齐；不补缺桶、不跨日、不伪造原生15m。日线与派生15m仅regular。 |
 | 历史覆盖 | 分块请求不保证历史可用；此前8月分钟线探测全为插值，不可分析。 |
 | 数据源 | Robinhood默认主动取数；旧Alpaca导入和显式TradingView/Alpaca接口只作兼容，不自动回退。 |

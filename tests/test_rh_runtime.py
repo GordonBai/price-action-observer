@@ -30,6 +30,7 @@ class RuntimeTests(unittest.TestCase):
                 report=acquire(warm_provider,j,['SOXL'],'2026-11-18T14:54:00Z','2026-11-18T15:00:00Z')
                 self.assertEqual(report['ingested'],6)
                 self.assertEqual(report['status'],'ELIGIBLE_OBSERVATIONS')
+                self.assertEqual(report['omitted_emitted_by_symbol'], {'SOXL': 6})
                 snap=j.snapshot(NOW)
                 self.assertTrue(snap['ready'])
                 self.assertEqual(snap['readiness'],'READY_FOR_RESEARCH')

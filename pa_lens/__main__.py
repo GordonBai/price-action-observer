@@ -10,7 +10,9 @@ from .core import project_equal_leg
 def main(argv=None):
     parser=argparse.ArgumentParser(description='Causal PA research tools; no order execution')
     sub=parser.add_subparsers(dest='command',required=True)
-    sub.add_parser('wizard',help='interactive structured read-only monitor setup; requires TTY')
+    sub.add_parser('wizard',help='interactive read-only monitor or daily swing setup; requires TTY')
+    from .swing import add_arguments,run_swing
+    add_arguments(sub.add_parser('swing',help='one-shot research scan of closed XNYS daily bars'))
     mm=sub.add_parser('mm',help='manual AB=CD projection (no automatic anchor selection)')
     for name in ('a','b','c'):mm.add_argument('--'+name,type=float,required=True)
     serve=sub.add_parser('serve',help='local authenticated ingestion and dashboard; needs PA_LENS_TOKEN')
@@ -40,8 +42,8 @@ def main(argv=None):
         rh.add_argument('--codex-binary',default='codex');rh.add_argument('--timeout',type=float,default=30)
         rh.add_argument('--db',default='local_data/robinhood-v07.sqlite3')
         rh.add_argument('--capture-dir',help='optional private capture; inside project only local_data/')
-        rh.add_argument('--no-native-context',action='store_true',help='disable automatic EMA20/RSI14 requests; no local fallback')
-        rh.add_argument('--native-indicators',help='extra native types; EMA20/RSI14 context is automatic unless --no-native-context')
+        rh.add_argument('--no-native-context',action='store_true',help='disable automatic native context requests; no local fallback')
+        rh.add_argument('--native-indicators',help='extra native types; interval context pack is automatic unless --no-native-context')
         rh.add_argument('--native-config',help='JSON list of type/parameters/interval/output objects')
         rh.add_argument('--native-output',default='latest',help='series, latest, or last:N')
         rh.add_argument('--native-interval',help='explicit provider interval, independent of PA period; required override for PA15m')
@@ -62,6 +64,8 @@ def main(argv=None):
         if args.command=='wizard':
             from .wizard import run_wizard
             run_wizard(main)
+        elif args.command=='swing':
+            return run_swing(args,parser)
         elif args.command in ('fetch-robinhood','poll-robinhood'):
             _run_robinhood(args,parser)
         elif args.command=='mm':print(json.dumps(project_equal_leg(args.a,args.b,args.c),ensure_ascii=False))

@@ -15,7 +15,7 @@
 A read-only **Robinhood MCP market observer**, extended from [AI Agent Lens](https://github.com/roan-maverick/tradingview-indicator-for-ai-agents). It processes completed candles sequentially, identifies a research subset of Brooks-inspired price-action structures, and explains observations in Chinese with evidence and uncertainty.
 
 - **Terminal monitor:** Market / Native Indicators / Price Action / Data Quality panels, with a New York clock and explicit freshness.
-- **Native-first context:** matching Robinhood EMA20/RSI14 for current interpretation; unavailable means unavailable, **never silent local fallback**.
+- **Native-first context:** matching Robinhood indicators for the current closed bar, with explicit availability and provenance.
 - **Price structures:** double tops/bottoms, neckline confirmation, measured moves, inside/outside bars, breakout observations and documented heuristic lifecycle rules.
 - **Replay and inspection:** causal event tape, restartable SQLite journals, chart hover and historical event focus.
 - **44 source-grounded knowledge cards**, not 44 fully implemented detectors. No invented win probabilities: `probability=null`.
@@ -49,29 +49,34 @@ Offline synthetic replay needs no Robinhood authorization. [Provider contract an
 python -m pa_lens wizard
 ```
 
-On macOS, you can instead double-click [`Start-Monitor.command`](Start-Monitor.command). It selects an existing interpreter; it does not install anything. The wizard asks for stocks, candle period, session, polling schedule, finite/infinite duration, quality policy, infra location and a **new** journal, then previews the command for confirmation.
-
-Defaults: **NVDA · 5m · regular · 30 seconds · 10 rounds · strict quality**. Enter `y` explicitly to explore UNKNOWN data. `q`, EOF or Ctrl-C cancels setup; Ctrl-C stops monitoring. Non-TTY input/output is rejected immediately rather than waiting for answers. [Complete terminal/wizard guide](docs/TERMINAL_MONITOR.md).
-
-> **Why strict mode may show no bars:** recent tested Robinhood responses omitted the interpolation flag. Missing is unknown, not proven real. Strict mode excludes those bars. Explicit exploration retains `DATA_QUALITY_UNKNOWN` and `ready=false`; positive volume does not prove non-interpolation.
+On macOS, double-click [`Start-Monitor.command`](Start-Monitor.command) to launch the wizard using an existing Python environment. Choose `monitor` for ongoing polling (default: NVDA, 5m, regular session, 30 seconds, 10 rounds) or `swing` for a one-shot daily scan. Both preview the command and require confirmation. Enter `q`, EOF or Ctrl-C to cancel setup. The wizard requires a TTY. [Terminal and wizard guide](docs/TERMINAL_MONITOR.md)
 
 ### 3. Or run a bounded command directly
 ```bash
 python -m pa_lens poll-robinhood --infra-root "$RH_INFRA" \
   --symbols NVDA --interval 5minute --bounds regular \
   --poll-seconds 30 --count 2 --output tui \
-  --db local_data/nvda-strict-demo.sqlite3
+  --db local_data/nvda-monitor.sqlite3
 ```
 
-Add `--accept-unknown` only when intentionally exploring unknown-quality data; use a separate new DB. Use `--output text` for complete readable output, or `--output jsonl` for scripts. One process handles one candle period and multiple symbols; different processes need different journals. Reusing a journal after code/config identity changes is rejected, not silently migrated. The latest native multi-symbol quality correction is part of that identity: start a new journal. Existing private data is preserved; this does not promise automatic migration or reanalysis.
+Robinhood bars with an omitted `interpolated` marker are eligible by default and retain `INTERPOLATION_OMITTED` provenance. Explicit `true` and malformed markers are rejected. Use `--strict-interpolation` to exclude omissions too. `--accept-unknown` remains a deprecated compatibility flag on fetch/poll. Use `--output text` for full details or `--output jsonl` for scripts. Each monitor process needs its own journal. Code or configuration changes can require a new journal.
 
 The TUI clock redraws each second **without fetching new data**. Human-readable clock, pull/receipt, bar and event times use full New York dates with **EST/EDT**; stored timestamps and JSONL remain UTC. A moving clock is not a fresh quote. Bootstrap history, retained old bars and newly observed events are distinguished. `--align-close --settle-seconds 10` aligns later requests to interval boundaries; the first request is immediate. These are getter polls, not an exchange push stream or an unattended-service guarantee.
 
+## Daily swing scan
+
+```bash
+python -m pa_lens swing --infra-root "$RH_INFRA" --symbols SPY QQQ NVDA --output text
+python -m pa_lens swing --input daily-bars.jsonl --focus-bars 25
+```
+
+The live scan requests 250 calendar days of regular, split-adjusted XNYS history by default and highlights structures within the latest 25 trading bars. Offline JSONL/CSV accepts completed `D` bars, scans all input streams by default and accepts `--symbols` to select tickers. The journal defaults to memory. The report shows regime, lifecycle state and structural reference coordinates with `probability=None`. Output defaults to text on a terminal and JSONL when piped. [Swing options and input](docs/ROBINHOOD.md#daily-swing-observations-and-local-indicators)
+
 ## Native indicators and price structures
 ### Current native-first interpretation
-Fetch/poll automatically requests **EMA20 and RSI14**, within the 64-call native request budget. `--no-native-context` disables those automatic requests, not the no-fallback policy.
+Supported intraday Robinhood intervals automatically request **EMA20, VWAP, ATR14, RSI14 and classic pivots**. Regular daily fetch/poll and live swing request **EMA20, ATR14, RSI14 and MACD (12, 26, 9)**. Use `--no-native-context` to skip those requests.
 
-Context requires matching symbol, period, bounds, adjustment, actual parameters and the latest candle's effective close. EMA9 cannot replace EMA20. Missing, partial, undefined, failed, mismatched or stale evidence is explicitly unavailable. Value age and receipt age are separate; the freshness threshold is `max(120 seconds, 2 × interval)` (daily: a conservative 48 hours, even during closures). Known bar revisions/late arrivals block comparison against the uncorrected original close. Source quality and warmup remain unknown.
+Context requires matching symbol, period, bounds, adjustment, actual parameters and the latest candle's effective close. EMA9 cannot replace EMA20. Missing, partial, undefined, failed, mismatched or stale evidence is explicitly unavailable. Value age and receipt age are separate; the intraday freshness threshold is `max(120 seconds, 2 × interval)`. Daily bars and indicators age by the XNYS calendar with a two-hour post-close grace period. Known bar revisions/late arrivals block comparison against the uncorrected original close. Source quality and warmup remain unknown.
 
 Pure candle structures remain independent. Local EMA20/RSI14/mean-TR values are diagnostic, not substitutes. Local `ema_gap` / `ema_first_return` events remain in the audit tape as `LOCAL_DIAGNOSTIC` but are excluded from primary grouping. Current native context is generated at snapshot time; historical focus never backfills it from later receipts.
 
@@ -107,9 +112,9 @@ Primary display defaults to priority3, a 15-minute same-family/status/direction 
 ## Data quality and timing boundaries
 | Topic | Contract |
 |---|---|
-| Interpolation | Explicit `true` is always excluded. Missing flags are excluded unless explicitly opted into UNKNOWN exploration. |
+| Interpolation | Omitted flags are eligible with provenance by default. Explicit `true` and malformed flags are excluded. Strict mode also excludes omissions. |
 | Revisions / late arrivals | Original tape is preserved; changed/late observations are quarantined. Readiness degrades, not silently recomputed history. |
-| Daily swing | XNYS session calendar, continuity across weekends/holidays, reset on missing expected sessions. A source day becomes available at **following UTC midnight**, not session open or exchange close. |
+| Daily swing | XNYS session calendar, continuity across weekends/holidays, reset on missing expected sessions. Regular daily bars close at the actual XNYS close, typically **16:00 ET** and **13:00 ET** on scheduled early closes. |
 | Derived 15m | Native 5m inputs; only complete contiguous same-session triples anchored at09:30 New York. No filled gaps, cross-day buckets or false native15m indicators. Daily/derived15m require regular bounds. |
 | Provider limits | History availability is not guaranteed by chunking. An old August minute probe was entirely interpolated and unusable. |
 | Source separation | Robinhood is the default active source. Legacy Alpaca imports and explicitly selected TradingView/Alpaca interfaces remain compatibility paths, never automatic fallback. |

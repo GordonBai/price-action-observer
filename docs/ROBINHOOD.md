@@ -39,36 +39,50 @@ and the acquisition's pre-request cutoff. We do not guess a shorter duration for
 a final session bucket when the response does not give its actual close; this can
 delay or exclude a shortened terminal bar when the requested end is the session close.
 
-By default, only a literal `interpolated: false` qualifies. Literal true is counted as
-`interpolated`. A missing, null, or malformed marker is `interpolation_unknown`,
-not a verified real bar. Both retain their observed open timestamps in quality
-metadata. True never produces a signal. By explicit exploratory opt-in, an absent
-key may be included in an unverified series; null and malformed values are still
-excluded. Every such included bar is marked `DATA_QUALITY_UNKNOWN` in its
-`bar_provenance`, and the batch and fetch count `unknown_emitted`. Volume does
-not establish interpolation status. Regular-session bars must identify their
-provider session as `reg`, and all intraday opens must be minute-aligned.
- `not_interpolated` counts explicit false
-markers among unique in-range dated rows, not usable bars; invalid or incomplete rows can still be excluded. `emitted` is the count of eligible
-closed bars. Check `no_usable_symbols` and `missing_results` alongside these
-counts. Missing/unusable bars are evidence gaps, not proof that no trading occurred.
+Explicit `interpolated: false` qualifies, and a missing key is eligible by
+default with `INTERPOLATION_OMITTED` in `bar_provenance`. The request quality
+counts those emitted bars as `omitted_emitted`. Explicit `true` is excluded
+and counted as `interpolated`; null and malformed markers are excluded and
+counted as `invalid`. `--strict-interpolation` also excludes omitted markers.
+Positive volume alone provides no interpolation evidence. Regular-session bars
+must identify their provider session as `reg`. Intraday opens must be
+minute-aligned. `not_interpolated` counts explicit false markers among
+unique in-range rows. `emitted` counts eligible closed bars. Inspect
+`no_usable_symbols` and `missing_results` for coverage gaps.
 
-The normalized source is `robinhood:<interval>:<bounds>:<adjustment_type>`;
-exploratory sources append `:accept_unknown` and must not share a verified journal. Do
-not mix different sources in a single continuous series. Treat raw captures and
-journals as local evidence: do not include them in a public commit.
+The normalized source is `robinhood:<interval>:<bounds>:<adjustment_type>`.
+Strict sources append `:strict_interpolation`. Each symbol, timeframe and
+source is a separate series. Keep private captures and journals out of commits.
 
 ## Daily swing observations and local indicators
 
 Install `python -m pip install -r requirements.txt` for the XNYS trading calendar.
-Daily `begins_at` is the session **date label at midnight UTC**, not an actual
-trade time. Only XNYS session dates are eligible. The normalized timestamp is
-the **following UTC midnight**, a conservative interval-availability boundary,
-not the exchange closing auction (including early closes). The provider label
-is retained as `session_date`. Before that boundary the day is incomplete.
-Normal weekends, holidays and DST changes do not reset PA; a skipped expected
-session clears the rolling context without inventing bars. Edge coverage before
-the first/after the last row is not inferred.
+Daily `begins_at` supplies the session date at midnight UTC. The provider
+label is retained as `session_date`. The normalized close is the actual XNYS
+session close, normally 16:00 ET or 13:00 ET on scheduled early closes. The
+session is incomplete until that boundary. Freshness follows expected XNYS
+sessions with a two-hour post-close grace period, so Friday can stay recent
+all weekend. Canonical offline input also accepts the legacy next-UTC-midnight
+timestamps. Missing an expected session clears rolling context. Weekends,
+holidays and DST changes preserve continuity.
+
+```sh
+python -m pa_lens swing --symbols SPY QQQ NVDA --warmup-days 250 --focus-bars 25
+python -m pa_lens swing --input sessions.csv --symbols NVDA --output jsonl
+```
+
+The live scan accepts 1–10 tickers, a warmup of 60–1825 calendar days and a
+focus of 5–120 trading bars. It uses regular daily bars with split adjustment
+by default. The full input history warms the engine, and the focus controls
+which recent structures are highlighted. Offline JSONL/CSV uses the canonical
+bar fields and requires `timeframe=D`. It sorts by close within each
+`(symbol, timeframe, source)` stream and scans all input symbols unless a
+filter is supplied. `--input` excludes live options such as `--warmup-days`,
+`--adjustment`, `--strict-interpolation` and `--infra-root`. The default
+`:memory:` journal can be overridden with `--db`. Use a separate journal
+when scanning an older offline cutoff for an existing stream. Output defaults
+to text on a TTY and one JSONL record per stream when piped. Structural
+coordinates are research references with `probability=None`.
 
 Daily patterns use completed session bars as their units. Intraday opening
 range/reversal and 1m-to-5m aggregation do not apply. Legacy intraday fill
@@ -80,17 +94,17 @@ EMA20 seeds at first close and has a 20-bar warmup; Wilder RSI14 seeds at the
 first 14 changes (15 closes), with flat RSI defined as 50. Existing engine ATR
 uses the latest up to 15 true ranges, first bar high-low, with tick floor; not
 Wilder ATR. These values and editorial presentation priorities are not calibrated
-probabilities. All events/snapshots from exploratory sources retain unknown quality.
+probabilities.
 
 ## Active runtime (v0.5)
 
 `fetch-robinhood` requests an explicit `--start` / `--end` RFC3339 range.
 `poll-robinhood` repeats read-only requests; `--once` or `--count N` bounds the run.
 Both accept `--symbols SOXL QQQ`, `--interval`, `--bounds`, `--adjustment`,
-`--infra-root`, `--codex-binary`, `--timeout`, `--db`, `--accept-unknown`,
+`--infra-root`, `--codex-binary`, `--timeout`, `--db`, `--strict-interpolation`,
 and optional `--capture-dir local_data/private-captures` / `--quotes`.
-The provider only calls historical/quote reads. Authentication failures terminate
-without auto-login, account access, orders, or another data-source fallback.
+`--accept-unknown` is a deprecated compatibility no-op. The provider uses historical, quote and indicator reads.
+Authentication failures terminate the request.
 Legacy Alpaca and TradingView commands are explicitly named compatibility paths.
 
 `15minute` is a runtime-derived period, **not a Robinhood MCP interval**. It asks
@@ -98,12 +112,13 @@ for five-minute regular-session bars and only emits complete, contiguous triples
 anchored at 09:30 America/New_York. A missing member, cross-session combination,
 partial end bucket or scheduled early-close violation never produces a 15m bar.
 Provenance retains all three original closes and `derived_from=5minute`; volume
-is summed, open/close use first/last, high/low use the extrema. Unknown source
-quality stays unknown. True interpolated inputs cannot form complete buckets.
+is summed, open/close use first/last, high/low use the extrema. Omitted markers
+remain visible in derived-bar provenance. Each input must pass the configured
+interpolation policy.
 
 Default polling is serial, every 30 seconds **after completion**. `--align-close`
 waits between requests for the next 09:30 ET-anchored interval grid plus
-`--settle-seconds 10`. Daily uses next UTC midnight availability. The first
+`--settle-seconds 10`. Daily follows the XNYS session close. The first
 request is immediate. This is not exchange push streaming, guaranteed publication
 latency or a market-hours daemon. Intraday default overlap is 120 minutes; daily
 bootstrap is 180 calendar days and subsequent overlap is seven days. The start
@@ -129,9 +144,11 @@ event focus hides current indicator values instead of leaking future state.
 Pinned calendar package version and all acquisition/analytics sources participate
 in journal identity; migrate to a new DB after semantic code changes.
 
-Derived-quality count units are explicit: `received`, `unknown_emitted`,
+Derived-quality count units are explicit: `received`, `omitted_emitted`,
 `interpolated`, and other source counters count original five-minute inputs;
-`emitted` and `derived_unknown_emitted` count produced fifteen-minute bars.
+`emitted` and `derived_omitted_emitted` count produced fifteen-minute bars.
+`omitted_emitted_by_symbol` counts emitted bars per symbol with omission
+provenance, in the requested output timeframe.
 `incomplete_derived_buckets` counts observed partial/invalid groups only, not
 entirely absent buckets. It is not a total missing-feed count. When a requested
 symbol has no matching existing stream, polling uses bootstrap history for the
@@ -140,7 +157,7 @@ request rather than giving that new symbol only an existing stream's overlap.
 ### Poll-window boundary safety
 
 Implicit polling starts are floored to the requested bar's open-time grid
-(15m uses its derived 09:30 ET grid; daily uses UTC midnight). Each stream's
+(15m uses its derived 09:30 ET grid; daily uses the XNYS session close). Each stream's
 first requested lower boundary is retained through acquisition evidence and
 restarts. Later overlap/catch-up never expands before that bootstrap boundary,
 even when a provider's newest bar is delayed. Requested symbols with different
@@ -187,8 +204,7 @@ be resolved once at the pre-acquisition cutoff.
 
 Normalized points end no later than the earlier of the query end and the
 pre-acquisition time. Intraday times use the nominal elapsed interval from
-`begins_at`; regular daily points use the next UTC midnight following a
-validated XNYS session. Extended daily and week-or-longer results are
+`begins_at`; regular daily points use the actual XNYS session close. Extended daily and week-or-longer results are
 raw-only rather than given guessed closes. `latest` in the normalized response
 is the final eligible point from the returned window, and can be absent if the
 server only returned a newer, ineligible row. Values in the normalized response
@@ -206,7 +222,10 @@ indicator calculations and signals.
 
 ## Native indicator runtime (v0.6)
 
-EMA20/RSI14 context requests are automatic in v0.7 (disable with `--no-native-context`). Add `--native-indicators all` for all eighteen types, or a
+Supported intraday intervals automatically request EMA20, VWAP, ATR14, RSI14
+and classic pivots. Regular daily mode requests EMA20, ATR14, RSI14 and MACD
+(12, 26, 9). The automatic packs request `last:2`; use `--no-native-context`
+to skip them. Add `--native-indicators all` for all eighteen types, or a
 comma-separated list such as `--native-indicators ema,rsi,macd,pivot_points`.
 `--native-output latest` (default), `last:3`, or `series` controls provider output.
 `--native-interval` explicitly selects the provider timeframe, otherwise the PA
@@ -266,14 +285,15 @@ If refresh fails, native current-value rows are hidden and marked DISCONNECTED;
 a recently received response is never used as a substitute for point-time freshness.
 
 ## Native-first interpretation contract (v0.7)
-Current snapshot interpretation uses native-only EMA20/RSI14, exact period/source
+Current snapshot interpretation uses provider-native context, exact period/source
 semantics and matching latest-bar effective time. Receipt must be no later than
 generation and after_bar_seq cannot exceed the observed tape. It never restores
 a historical interpretation from later native snapshots. Local EMA pattern families
 are labeled audit diagnostics and excluded from primary presentation. Missing/
 partial/error/undefined/stale values remain unavailable, without local fallback.
-Value-age cutoff is max(120s,2×interval); receipt age is reported independently.
+Intraday value age is bounded by max(120s,2×interval). Daily freshness follows
+the XNYS calendar. Receipt age is reported independently.
 Known quarantined bar revisions/late arrivals block comparison with the uncorrected
 first-received close. Unknown input/source quality remains visible. Automatic
-EMA20/RSI14 requests are merged by interval and exact period; all18 explicitly
-requests EMA20; EMA9 can be requested separately but cannot fill the EMA20 role.
+Context requests are merged by interval and effective parameters. The all-18
+selection includes EMA20. EMA9 is available as a separate parameter choice.

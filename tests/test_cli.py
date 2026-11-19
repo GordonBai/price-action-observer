@@ -9,6 +9,7 @@ class CLITests(unittest.TestCase):
         r=subprocess.run([sys.executable,'-m','pa_lens','--help'],capture_output=True,text=True)
         self.assertEqual(r.returncode,0,r.stderr)
         self.assertIn('replay',r.stdout)
+        self.assertIn('swing',r.stdout)
     def test_serve_without_token_rejected(self):
         import os
         env=dict(os.environ);env.pop('PA_LENS_TOKEN',None)

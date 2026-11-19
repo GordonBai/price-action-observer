@@ -29,12 +29,26 @@ Complete discretionary MTR/final flags, generalized failed failures, second-leg 
 ## Causality and versioning
 Each event has `observed_at`, status, anchors, code/config version, knowledge hash, source references and uncertainty. Right-confirmed pivots retain their occurrence times but are published only after confirmation. Future bars cannot rewrite an earlier emitted event. OHLC ambiguity cannot be resolved by assuming intrabar order. A local structural confirmation proves only the specified closed-bar condition.
 
-Intraday session-date changes (America/New_York) and missing same-session intervals reset structures. Daily bars instead remain continuous across expected XNYS sessions, including weekends/holidays; a missing expected trading session resets the structures. Daily labels represent conservative following-UTC-midnight availability, not actual session close. Live/replay share one engine. Journals pin code, configuration and knowledge hashes; changed inputs or definitions require a new database. No silent history rewriting. Detector state and recent event retention are bounded; current-session bar history and on-disk journals still require resource planning. A 24-hour non-US feed does not have US-equity session semantics merely because input validation accepts its symbol.
+Intraday session-date changes (America/New_York) and missing same-session intervals reset structures. Daily bars instead remain continuous across expected XNYS sessions, including weekends/holidays; a missing expected trading session resets the structures. Robinhood daily bars and native points are timestamped at the actual XNYS session close, typically 16:00 ET or 13:00 ET on scheduled early closes. Daily freshness follows the calendar and a two-hour post-close grace period. Canonical offline input accepts legacy next-UTC-midnight times. Live/replay share one engine. Journals pin code, configuration and knowledge hashes; changed inputs or definitions require a new database. No silent history rewriting. Detector state and recent event retention are bounded; current-session bar history and on-disk journals still require resource planning. A 24-hour non-US feed does not have US-equity session semantics merely because input validation accepts its symbol.
 
 ## Evaluation purpose
 The primary deliverable is chart observation and explanation correctness. `replay` no longer automatically evaluates a trading strategy. `evaluate` retains an explicitly separate legacy hypothetical-policy experiment; its returns are not pattern accuracy. Actual direction afterwards is a diagnostic, not proof that a neutral shape or candidate was correctly identified. Precision and recall require a predefined independent annotation rubric, both event and no-event windows, and inter-rater checks.
 
 ## Display priority is not prediction confidence
-The receiver defaults to priority 3 (key structural lifecycle changes), a 15-minute cooldown per family/status/direction, and one combined display group per closed bar. `--display-min-priority 2` includes candidate observations; `0` and `--display-cooldown-minutes 0` reduce filtering, but do not expose every raw event in primary groups: local `ema_gap` and `ema_first_return` remain `LOCAL_DIAGNOSTIC` and are always excluded there. Inspect the original/raw event tape for those diagnostics. None of these options changes raw detector events or raises identification accuracy. A newly distinct pattern with the same editorial key can be hidden during cooldown, so the raw tape remains necessary for detailed review.
+The receiver defaults to priority 3 (key structural lifecycle changes), a 15-minute cooldown per family/status/direction, and one combined display group per closed bar. Priority 3 includes structural candidates and key lifecycle transitions. `--display-min-priority 2` includes additional candidate observations; `0` and `--display-cooldown-minutes 0` reduce filtering, but do not expose every raw event in primary groups: local `ema_gap` and `ema_first_return` remain `LOCAL_DIAGNOSTIC` and are always excluded there. Inspect the original/raw event tape for those diagnostics. None of these options changes raw detector events or raises identification accuracy. A newly distinct pattern with the same editorial key can be hidden during cooldown, so the raw tape remains necessary for detailed review.
 
 Display state is incremental, bounded and rebuilt from the complete journal, not recalculated from a sliding 200-event tail. Its settings are pinned in the journal identity. The panel distinguishes cumulative filtering totals from retained recent groups, and provides an original-event mode. Range/warmup contexts say observation-first, not buy/sell advice. This is visual noise control, not a permission to send unsolicited alerts.
+
+## Current terminal workflows
+
+`poll-robinhood` displays intraday context, active structures and reference
+levels. Eligible Robinhood bars with an omitted interpolation marker preserve
+that provenance. `--strict-interpolation` excludes omissions. The native
+intraday pack is EMA20, VWAP, ATR14, RSI14 and classic pivots. The regular daily
+pack is EMA20, ATR14, RSI14 and MACD.
+
+`swing` scans closed daily bars from Robinhood or canonical offline JSONL/CSV.
+It warms on the full input and highlights structures in the requested recent
+focus window. The wizard offers monitor and swing modes. Structural coordinates
+are research references with `probability=None`. Browser canvas level overlays
+and Phase 2 `--htf` linkage remain future work.

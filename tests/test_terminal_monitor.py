@@ -319,3 +319,63 @@ class TerminalMonitorTests(unittest.TestCase):
         self.assertEqual(view["panels"]["NATIVE INDICATORS"][3:5],
                          ["Available at:", "2026-11-17 19:00:00 EST"])
         self.assertIn("available at 2026-11-17 19:00:00 EST", view["text"])
+
+    def test_intraday_expanded_native_values_all_age_and_omission_is_provenance(self):
+        from pa_lens.terminal_monitor import clock_frame
+        def available(value, **fields):
+            return dict(status="AVAILABLE_SOURCE_UNKNOWN", effective_at=T11, value=value, **fields)
+        row = stream(T11, native=dict(status="AVAILABLE_SOURCE_UNKNOWN",
+            ema20=available("10.5", relation="above", distance="0.5", atr_multiple="0.25"),
+            vwap=available("11.2", relation="below"), atr14=available("2"), rsi14=available("60"),
+            pivot_points=available("10.3", values=dict(pivot="10.3", r1="12.7", s1="9.2"))))
+        receipt = dict(status="ELIGIBLE_OBSERVATIONS", quality={"omitted_emitted": 1})
+        view = TerminalMonitor(["SOXL"]).view({"streams": [row]}, [(("SOXL",), receipt)], now=dt(T11), source=SRC)
+        for expected in ("0.25 ATR", "EMA20", "VWAP", "below", "ATR14", "RSI14", "Pivot", "12.7"):
+            self.assertIn(expected, view["text"])
+        self.assertIn("Interp marker: omitted by provider", view["panels"]["DATA QUALITY"])
+        self.assertEqual(view["risk"]["UNKNOWN"], 0)
+        expired = clock_frame(view, dt("2026-11-18T15:14:00Z"), "WAITING", dt(T11))
+        stale_rows = [label for label in expired["panels"]["NATIVE INDICATORS"] if "STALE (last pull)" in label]
+        self.assertEqual(len(stale_rows), 4)
+        for indicator in ("EMA20", "VWAP", "ATR14", "RSI14", "Pivot"):
+            self.assertTrue(any(indicator in row for row in stale_rows))
+        self.assertIn("12.7", " ".join(view["panels"]["NATIVE INDICATORS"]))
+        self.assertNotIn("12.7", " ".join(expired["panels"]["NATIVE INDICATORS"]))
+
+        receipt["omitted_emitted_by_symbol"] = {"SOXL": 1}
+        bundled = TerminalMonitor(["SOXL", "SPY"]).view({"streams": [row, stream(T11, symbol="SPY")]},
+            [(("SOXL", "SPY"), receipt)], now=dt(T11), source=SRC)
+        self.assertEqual(bundled["panels"]["DATA QUALITY"].count("Interp marker: omitted by provider"), 1)
+
+    def test_daily_native_and_market_stay_recent_until_expected_session(self):
+        from pa_lens.terminal_monitor import clock_frame
+        friday = "2026-11-13T21:00:00Z"
+        native = dict(status="AVAILABLE_SOURCE_UNKNOWN", macd=dict(status="AVAILABLE_SOURCE_UNKNOWN",
+            effective_at=friday, values=dict(macd="2", signal="1", histogram="1"), histogram_delta="0.5"))
+        row = dict(stream(friday, native=native), timeframe="D")
+        view = TerminalMonitor(["SOXL"]).view({"streams": [row]}, [], now=dt(friday), source=SRC)
+        sunday = clock_frame(view, dt("2026-11-16T02:00:00Z"), "WAITING", dt(friday))
+        self.assertEqual(sunday["risk"]["STALE"], 0)
+        for value in ("MACD", "Sig", "Hist", "Delta"):
+            self.assertIn(value, " ".join(sunday["panels"]["NATIVE INDICATORS"]))
+        monday = clock_frame(view, dt("2026-11-16T23:01:00Z"), "WAITING", dt(friday))
+        self.assertIn("MACD  STALE (last pull)", monday["panels"]["NATIVE INDICATORS"])
+
+    def test_price_action_renders_active_setups_and_reference_coordinates(self):
+        monitor = TerminalMonitor(["SOXL"])
+        receipts = [(("SOXL",), {"status": "ELIGIBLE_OBSERVATIONS"})]
+        candidate = dict(event("first", T10), status="candidate", anchors=dict(neckline=12))
+        confirmed = dict(event("second", T11), anchors=dict(neckline=12, confirmation_level=12),
+                         trigger=13, stop=9, target=15)
+        baseline = monitor.view({"streams": [stream(T10, events=[candidate])]}, receipts, now=dt(T10), source=SRC)
+        self.assertIn("Neckline 12", " ".join(baseline["panels"]["PRICE ACTION"]))
+        row = stream(T11, events=[candidate, confirmed])
+        row["summary"] = dict(regime=dict(efficiency_20=0.42, reference_atr=2),
+            active_structures=dict(live_setups=[dict(family="double_bottom", status="confirmed", levels={}),
+                                               dict(family="three_push_wedge", status="candidate", levels={})]),
+            key_levels=[dict(label="SwLo", price=9), dict(label="PDH", price=13)])
+        current = monitor.view({"streams": [row]}, receipts, now=dt(T11), source=SRC)
+        for content in [current["text"], " ".join(current["panels"]["PRICE ACTION"])]:
+            for field in ("NEW PA", "Neckline 12", "Trig 13", "Stop 9", "MM 15", "Confirm 12",
+                          "Levels:", "SwLo 9", "PDH 13", "0.42", "three_push_wedge / candidate"):
+                self.assertIn(field, content)

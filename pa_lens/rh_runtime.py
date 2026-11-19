@@ -1,4 +1,5 @@
 """Active read-only acquisition: provider evidence is separate from local analysis."""
+from collections import Counter
 from dataclasses import asdict, replace
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
@@ -75,7 +76,10 @@ def acquire(provider, journal, symbols, start, end, *, interval='minute', bounds
                  'provider_quotes':quotes,'provider_indicators':'NOT_REQUESTED'}
         (path/f'acquisition-{acquisition_id}-{datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")}.json').write_text(
             json.dumps(capture,ensure_ascii=False,indent=2),encoding='utf-8')
+    omitted_by_symbol = Counter(row['symbol'] for row in result.bar_provenance
+                                if row['interpolation'] == 'omitted')
     return dict(acquisition_id=acquisition_id,source=result.source,status=status,quality=result.quality,
+                omitted_emitted_by_symbol=dict(omitted_by_symbol),
                 **counts,provider_quotes=quotes,provider_indicators='NOT_REQUESTED',live_verified=False,
                 notice='Local EMA/RSI and PA observations are not provider indicators or verified predictive signals.')
 
