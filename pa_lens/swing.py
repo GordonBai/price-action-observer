@@ -78,17 +78,14 @@ def _offline_rows(path, symbols, now):
                 raise ValueError(f'{"CSV row" if is_csv else "JSONL line"} {index}: {exc}') from exc
             if symbols is None or bar.symbol in symbols:
                 group = groups[(bar.symbol, bar.timeframe, bar.source)]
-                if session in group:
-                    _check_same_bar(group[session], bar, session)
-                else:
-                    group[session] = bar
+                group.setdefault(session, []).append(bar)
     _require_symbols(symbols or (), {key[0] for key in groups})
     if not groups:
         raise ValueError('offline input contains no daily bars')
     return groups
 
 
-def _check_same_bar(prior, observed, session):
+def _check_alternate_timestamp(prior, observed, session):
     if prior != replace(observed, time=prior.time):
         raise ValueError(f'conflicting daily bars for {observed.symbol} ({observed.source}) on {session}; '
                          'use a separate journal for corrected history')
@@ -111,12 +108,13 @@ def _offline_pending(journal, groups):
             symbol, _, source = key
             raise ValueError(f'{symbol} ({source}) journal already contains bars after this input. '
                              'Use a separate --db or the default in-memory journal.')
-        for session, bar in sorted(bars.items()):
-            prior = stored.get(session)
-            if prior is None:
-                pending.append(bar)
-            else:
-                _check_same_bar(prior, bar, session)
+        for session, observations in sorted(bars.items()):
+            prior = stored.get(session, observations[0])
+            for observed in observations:
+                if observed.time == prior.time:
+                    pending.append(observed)
+                else:
+                    _check_alternate_timestamp(prior, observed, session)
     return pending
 
 

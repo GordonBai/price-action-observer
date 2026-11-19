@@ -250,3 +250,34 @@ class SwingTests(unittest.TestCase):
                         main(['swing', *allowed])
                     self.assertIn('transport reached', err.getvalue())
                 self.assertEqual(opened.call_count, 2)
+
+    def test_same_timestamp_revisions_preserve_original_and_persist_quarantine(self):
+        original = self.fixture()[-1]
+        revised = dict(original, close=13.1)
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'revision.jsonl'
+            for reused in (False, True):
+                with self.subTest(reused=reused):
+                    db = str(Path(tmp) / f'revision-{reused}.db')
+                    args = ['--input', str(path), '--db', db]
+                    if reused:
+                        path.write_text(json.dumps(original))
+                        self.run_cli(args)
+                        path.write_text(json.dumps(revised))
+                    else:
+                        path.write_text('\n'.join(map(json.dumps, (original, revised))))
+                    record = json.loads(self.run_cli(args))
+                    self.assertEqual(record['bar_count'], 1)
+                    self.assertEqual(record['readiness'], 'DATA_REVIEW_REQUIRED')
+                    self.assertEqual(record['data_quality']['revision_count'], 1)
+                    journal = Journal(db)
+                    try:
+                        saved, = journal.snapshot()['streams']
+                        self.assertEqual(saved['bars'][0]['close'], original['close'])
+                        audit, = journal.conn.execute('SELECT kind,original,incoming FROM observation_audit')
+                        kind, before, received = audit
+                        self.assertEqual(kind, 'revision')
+                        self.assertEqual(json.loads(before)['close'], original['close'])
+                        self.assertEqual(json.loads(received)['close'], revised['close'])
+                    finally:
+                        journal.close()

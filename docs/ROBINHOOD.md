@@ -81,11 +81,12 @@ filter is supplied. `--input` excludes live options such as `--warmup-days`,
 `--adjustment`, `--strict-interpolation` and `--infra-root`. The default
 `:memory:` journal can be overridden with `--db`. Use `local_data/` for
 in-project journal files. Identical canonical and legacy rows for the same
-session count once, using the first timestamp received. Conflicting rows
-require choosing one version of that session. Use a separate journal when
-scanning an older offline cutoff for an existing stream or fetching a live
-window that overlaps legacy rows for the same Robinhood stream. Output defaults
-to text on a TTY and one JSONL record per stream when piped. Structural
+session count once, using the first timestamp received. Revisions at that
+timestamp are quarantined. Conflicts between different timestamps for the
+same session require choosing one version before scanning. Use a separate
+journal when scanning an older offline cutoff for an existing stream or
+fetching a live window that overlaps legacy rows for the same Robinhood stream.
+Output defaults to text on a TTY and one JSONL record per stream when piped. Structural
 coordinates are research references with `probability=None`.
 
 Daily patterns use completed session bars as their units. Intraday opening
