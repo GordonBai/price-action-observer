@@ -6,13 +6,13 @@
 
 **Architecture:** Keep the four causal PA detector engines (`core.py`, `advanced.py`, `observations.py`, `structures.py`) unchanged so pattern rules and knowledge-card SHA-256 mappings stay intact. Normalize timestamps, quality provenance, and multi-indicator native snapshots in the acquisition/interpretation layer, add a pure `StreamSummary` projection module (`pa_lens/context_summary.py`) for lifecycle resolution and key-level extraction, and wire both `TerminalMonitor` and the new `swing` CLI + `wizard` mode selector onto `StreamSummary`.
 
-**Tech Stack:** Python 3.11+ (`/Users/gordonbai/robinhood-trading-infra/.venv/bin/python`), `exchange-calendars==4.13.2`, `sqlite3`, `unittest`, zero new third-party dependencies.
+**Tech Stack:** Python 3.11+ (`../robinhood-trading-infra/.venv/bin/python`), `exchange-calendars==4.13.2`, `sqlite3`, `unittest`, zero new third-party dependencies.
 
 **Spec:** `docs/superpowers/specs/2026-11-18-p1-practical-terminal-swing-design.md`
 
 ## Global Constraints
 
-- **Python interpreter for all test/CLI commands:** `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python` (has `exchange-calendars==4.13.2` installed).
+- **Python interpreter for all test/CLI commands:** `../robinhood-trading-infra/.venv/bin/python` (has `exchange-calendars==4.13.2` installed).
 - **Read-only MCP allowlist:** Only `get_equity_historicals`, `get_equity_quotes`, and `get_equity_technical_indicators` are permitted; native indicator budget `<= 64` calls per fetch/poll; zero order/account/credential access.
 - **No silent fallback to local indicators:** Missing, mismatched, or stale native values must report `UNAVAILABLE` with explicit Chinese reason; local indicators remain labeled local/engine calculations.
 - **Untouched detector files:** Do not modify `pa_lens/core.py`, `pa_lens/advanced.py`, `pa_lens/observations.py`, `pa_lens/structures.py`, or `pa_lens/replay.py` unless strictly unavoidable; `tests/test_knowledge.py` pins their `knowledge/concepts.json` SHA-256 digests.
@@ -110,7 +110,7 @@ Also update `tests/test_provider_indicators.py` daily timestamp expectations fro
 
 - [ ] **Step 2: Run targeted tests to verify they fail**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_daily tests.test_provider_indicators tests.test_rh_runtime -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_daily tests.test_provider_indicators tests.test_rh_runtime -v`
 Expected: FAIL with `ImportError: cannot import name 'daily_close'`
 
 - [ ] **Step 3: Implement `timeframes.py` helpers and daily close normalization in `robinhood.py`, `provider_indicators.py`, and `rh_runtime.py`**
@@ -122,7 +122,7 @@ In `pa_lens/rh_runtime.py`: in `next_poll_delay`, delegate `interval == 'day'` a
 
 - [ ] **Step 4: Run targeted tests and existing daily/audit tests**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_daily tests.test_provider_indicators tests.test_rh_runtime tests.test_robinhood tests.test_audit -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_daily tests.test_provider_indicators tests.test_rh_runtime tests.test_robinhood tests.test_audit -v`
 Expected: PASS (updating any existing daily mock timestamps in `tests/test_robinhood.py` that asserted next-UTC-midnight on `RobinhoodProvider.fetch(..., interval="day")`).
 
 ---
@@ -162,7 +162,7 @@ Update/add tests in `tests/test_robinhood.py` and `tests/test_rh_runtime.py`:
 
 - [ ] **Step 2: Run tests to verify failure**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_robinhood tests.test_rh_runtime tests.test_service -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_robinhood tests.test_rh_runtime tests.test_service -v`
 Expected: FAIL (omitted bars currently rejected by default and marked `DATA_QUALITY_UNKNOWN`).
 
 - [ ] **Step 3: Implement omitted-marker policy in `robinhood.py`, `rh_runtime.py`, and `service.py`**
@@ -171,7 +171,7 @@ Update `RobinhoodProvider.fetch`, `rh_runtime.source_identity`, `rh_runtime.qual
 
 - [ ] **Step 4: Run tests to verify pass**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_robinhood tests.test_rh_runtime tests.test_service -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_robinhood tests.test_rh_runtime tests.test_service -v`
 Expected: PASS.
 
 ---
@@ -213,7 +213,7 @@ Add/update tests in `tests/test_native_interpretation.py`:
 
 - [ ] **Step 2: Run tests to verify failure**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_native_interpretation tests.test_native_runtime tests.test_panel -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_native_interpretation tests.test_native_runtime tests.test_panel -v`
 Expected: FAIL (only `ema20`/`rsi14` currently requested and interpreted; daily Friday snapshot marked expired after 48h).
 
 - [ ] **Step 3: Implement `context_specs`, `interpret`, and `dashboard.html` native rendering**
@@ -222,7 +222,7 @@ Update `pa_lens/native_runtime.py`, `pa_lens/native_interpretation.py`, and `pa_
 
 - [ ] **Step 4: Run tests to verify pass**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_native_interpretation tests.test_native_runtime tests.test_panel -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_native_interpretation tests.test_native_runtime tests.test_panel -v`
 Expected: PASS.
 
 ---
@@ -273,7 +273,7 @@ Add test in `tests/test_presentation.py` verifying `priority=3` for `double_bott
 
 - [ ] **Step 2: Run tests to verify failure**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_context_summary tests.test_presentation -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_context_summary tests.test_presentation -v`
 Expected: FAIL (`ModuleNotFoundError: No module named 'pa_lens.context_summary'`).
 
 - [ ] **Step 3: Implement `pa_lens/context_summary.py`, update `pa_lens/presentation.py` and `pa_lens/service.py`**
@@ -282,7 +282,7 @@ Implement `summarize_stream` in `pa_lens/context_summary.py`, update `priority()
 
 - [ ] **Step 4: Run tests to verify pass**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_context_summary tests.test_presentation tests.test_service -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_context_summary tests.test_presentation tests.test_service -v`
 Expected: PASS.
 
 ---
@@ -338,7 +338,7 @@ Update `tests/test_wizard.py`:
 
 - [ ] **Step 2: Run tests to verify failure**
 
-Run: `/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest tests.test_swing tests.test_terminal_monitor tests.test_wizard -v`
+Run: `../robinhood-trading-infra/.venv/bin/python -m unittest tests.test_swing tests.test_terminal_monitor tests.test_wizard -v`
 Expected: FAIL (`ModuleNotFoundError: No module named 'pa_lens.swing'`, missing TUI fields, old wizard prompt count).
 
 - [ ] **Step 3: Implement `pa_lens/swing.py`, upgrade `terminal_monitor.py`, `wizard.py`, `__main__.py`, and sync docs**
@@ -354,9 +354,9 @@ Implement `pa_lens/swing.py`, update `pa_lens/terminal_monitor.py`, `pa_lens/wiz
 
 Run:
 ```bash
-/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m compileall -q pa_lens tests knowledge
-/Users/gordonbai/robinhood-trading-infra/.venv/bin/python -m unittest discover -s tests -v
-/Users/gordonbai/robinhood-trading-infra/.venv/bin/python knowledge/kb.py search "双底" >/dev/null
+../robinhood-trading-infra/.venv/bin/python -m compileall -q pa_lens tests knowledge
+../robinhood-trading-infra/.venv/bin/python -m unittest discover -s tests -v
+../robinhood-trading-infra/.venv/bin/python knowledge/kb.py search "双底" >/dev/null
 git diff --check
 ```
 Expected: All tests PASS (1 optional Chromium screenshot test skipped if Chromium binary absent), zero `kb` / `knowledge` hash errors, zero whitespace errors.
