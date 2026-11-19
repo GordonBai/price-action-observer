@@ -125,6 +125,26 @@ class NativeInterpretationTests(unittest.TestCase):
             row['latest']['time'] = bar['time']
         self.assertEqual(interpret(bar, rows, sunday, 5)['ema20']['status'], AVAILABLE)
 
+    def test_macd_histogram_delta_requires_adjacent_xnys_sessions(self):
+        from pa_lens.native_interpretation import interpret
+
+        for previous, latest, expected in (
+            ('2026-11-18T21:00:00Z', '2026-11-20T21:00:00Z', None),
+            ('2026-11-20T21:00:00Z', '2026-11-23T21:00:00Z', '0.5'),
+            ('2026-11-25T21:00:00Z', '2026-11-27T18:00:00Z', '0.5'),
+            ('2026-11-26T00:00:00Z', '2026-11-28T00:00:00Z', '0.5'),
+        ):
+            with self.subTest(previous=previous, latest=latest):
+                bar, row = self.fixture()
+                bar.update(timeframe='D', source='robinhood:day:regular:split', time=latest)
+                row['requested'].update(interval='day', parameters={})
+                row.update(indicator_type='macd', returned_params=DAILY_PACK['macd'], received_at=latest,
+                           latest=dict(time=latest, values=dict(macd='0.8', signal='0.5', histogram='0.3')))
+                row['points'] = [dict(time=previous, values={'histogram': '-0.2'}), row['latest']]
+                macd = interpret(bar, [row], datetime.fromisoformat(latest.replace('Z', '+00:00')), 5)['macd']
+                self.assertEqual(macd['status'], AVAILABLE)
+                self.assertEqual(macd['histogram_delta'], expected)
+
     def test_unsupported_streams_keep_legacy_keys_unavailable(self):
         from pa_lens.native_interpretation import interpret
         bar, row = self.fixture()

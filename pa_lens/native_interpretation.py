@@ -5,7 +5,7 @@ from decimal import Decimal, DecimalException
 from .native_runtime import DAILY_CONTEXT_PACK, INTRADAY_CONTEXT_PACK
 from .provider_indicators import INDICATOR_DEFAULTS, INDICATOR_FIELDS
 from .robinhood import INTERVAL_MINUTES
-from .timeframes import is_daily_fresh
+from .timeframes import consecutive_daily, is_daily_fresh
 
 
 _AVAILABLE = 'AVAILABLE_SOURCE_UNKNOWN'
@@ -23,15 +23,17 @@ def _decimal(value):
     return number
 
 
-def _histogram_delta(row, latest, histogram):
+def _histogram_delta(row, latest, point, histogram):
     points = row.get('points', ())
-    if len(points) >= 2 and points[-1]['time'] == latest['time']:
-        previous = points[-2]['values'].get('histogram')
-        if previous is not None:
-            try:
-                return str(histogram - _decimal(previous))
-            except (DecimalException, ValueError):
-                pass
+    if len(points) < 2 or points[-1]['time'] != latest['time']:
+        return None
+    previous = points[-2]
+    try:
+        prior_histogram = previous['values'].get('histogram')
+        if prior_histogram is not None and consecutive_daily(_time(previous['time']), point):
+            return str(histogram - _decimal(prior_histogram))
+    except (KeyError, DecimalException, ValueError):
+        pass
     return None
 
 
@@ -105,7 +107,7 @@ def _interpret_indicator(bar, snapshots, now, observation_seq, interval, bounds,
             if name == 'ema':
                 fields['explanation'] = f'当前收盘 {close} 相对原生 EMA20 {value}：{relation}；不是买卖指令。'
         elif name == 'macd':
-            fields['histogram_delta'] = _histogram_delta(row, latest, value)
+            fields['histogram_delta'] = _histogram_delta(row, latest, point, value)
         elif name == 'rsi':
             fields['explanation'] = f'原生 RSI14 为 {value}；仅描述数值，不推断必然反转。'
     except (KeyError, DecimalException, ValueError):
