@@ -379,3 +379,54 @@ class TerminalMonitorTests(unittest.TestCase):
             for field in ("NEW PA", "Neckline 12", "Trig 13", "Stop 9", "MM 15", "Confirm 12",
                           "Levels:", "SwLo 9", "PDH 13", "0.42", "three_push_wedge / candidate"):
                 self.assertIn(field, content)
+
+    def test_daily_catchup_only_announces_latest_session_during_grace(self):
+        thursday = "2026-11-12T21:00:00Z"
+        friday = "2026-11-13T21:00:00Z"
+        monday = "2026-11-16T21:00:00Z"
+        monitor = TerminalMonitor(["SOXL"])
+        self.render(monitor, [dict(stream(thursday), timeframe="D")], thursday)
+        events = [event("friday-catchup", friday), event("monday-current", monday)]
+        text = self.render(monitor, [dict(stream(monday, events=events), timeframe="D")], "2026-11-16T21:05:00Z")
+        self.assertIn("id=monday-current", text)
+        self.assertNotIn("id=friday-catchup", text)
+        self.assertIn("1 display-filtered event(s) (older catch-up)", text)
+
+    def test_monitor_labels_reference_atr_and_excludes_native_on_optout(self):
+        from pa_lens.terminal_monitor import clock_frame
+        row = stream(T11)
+        row["summary"] = {"regime": {"context": "trend_up", "efficiency_20": 0.8,
+            "reference_atr": 3.25, "engine_atr": 1.75, "atr_origin": "robinhood_native_atr14"}}
+        def view(enabled):
+            return TerminalMonitor(["SOXL"]).view({"streams": [row]}, [], now=dt(T11),
+                                                  source=SRC, native_enabled=enabled)
+        fresh = view(True)
+        aged = clock_frame(fresh, dt("2026-11-18T15:15:00Z"), "WAITING", dt(T11))
+        self.assertIn("Native ATR14 3.25", fresh["text"])
+        self.assertIn("Engine ATR15 1.75", " ".join(aged["panels"]["PRICE ACTION"]))
+        off = view(False)
+        for destination in (off["text"], " ".join(off["panels"]["PRICE ACTION"])):
+            self.assertIn("Engine ATR15 1.75", destination)
+            self.assertNotIn("3.25", destination)
+
+    def test_small_tui_prioritizes_latest_event_coordinates_and_clues(self):
+        from pa_lens.terminal_monitor import clock_frame, format_tui, visible_width
+        monitor = TerminalMonitor(["SOXL"])
+        receipts = [(("SOXL",), {"status": "ELIGIBLE_OBSERVATIONS"})]
+        monitor.view({"streams": [stream(T10)]}, receipts, now=dt(T10), source=SRC)
+        earlier = dict(event("earlier", T11, "final_flag_development"), explanation="Verbose " * 25)
+        latest = dict(event("latest", T11), anchors={"neckline": 12}, trigger=13, stop=9, target=15)
+        row = stream(T11, events=[earlier, latest])
+        row["summary"] = dict(regime=dict(context="range_or_transition", efficiency_20=0.42,
+                                            reference_atr=2, atr_origin="local_engine_atr15"),
+            active_structures=dict(live_setups=[dict(family="double_bottom", status="confirmed", levels={})]),
+            key_levels=[dict(label="SwLo", price=9), dict(label="PDH", price=13)])
+        view = monitor.view({"streams": [row]}, receipts, now=dt(T11), source=SRC)
+        frame = format_tui(clock_frame(view, dt(T11), "WAITING", dt(T11)), width=80, height=24)
+        for clue in ("NEW PA · double_bottom", "Neckline 12", "Trig 13", "Stop 9", "MM 15",
+                     "Active: double_bottom", "Levels:", "SwLo 9", "PDH 13"):
+            self.assertIn(clue, frame)
+        self.assertIn("id=earlier", view["text"])
+        self.assertIn("id=latest", view["text"])
+        self.assertLessEqual(len(frame.splitlines()), 24)
+        self.assertTrue(all(visible_width(line) < 80 for line in frame.splitlines()))

@@ -41,14 +41,16 @@ The PA context is the first-received candle-based state, not a prediction.
 The first usable scan per symbol establishes a baseline; it never announces the
 loaded history as new. Following scans only announce newly observed events that
 pass the journal's display priority/cooldown filter and fall after that symbol's
-prior close. Retained IDs are deduplicated. Stale, catch-up, fixed-end and
+prior close. Daily polling announces events only from the latest accepted
+session. Retained IDs are deduplicated. Stale, catch-up, fixed-end and
 quarantined observations are not promoted to current announcements; the
 status and any held display-eligible event count are shown. The full journal is
 not filtered or rewritten. `--display-min-priority` changes editorial importance,
 not confidence or win rate.
 
 The Price Action panel shows regime, 20-bar efficiency, reference ATR, active
-setups and a compact reference-level strip. Event coordinates such as
+setups and a compact reference-level strip. It labels the reference volatility
+as native ATR14 or local engine ATR15. Event coordinates such as
 Neckline, Trig, Stop, MM and Confirm are research references with
 `probability=None`. The browser canvas level overlays and Phase 2 `--htf`
 linkage are future work.

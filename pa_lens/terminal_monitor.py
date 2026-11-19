@@ -217,14 +217,20 @@ class TerminalMonitor:
             summary = stream.get("summary", {})
             regime = summary.get("regime", {})
             context = regime.get("context", stream["state"].get("context", "unavailable"))
-            if regime.get("efficiency_20") is not None:
-                context += f" | 20B eff {regime['efficiency_20']:.2f}"
+            efficiency = regime.get("efficiency_20")
+            efficiency_text = f"20B eff {efficiency:.2f}" if efficiency is not None else ""
+            native_atr = regime.get("atr_origin") == "robinhood_native_atr14"
+            engine_atr = regime.get("engine_atr") if native_atr else regime.get("reference_atr")
+            local = f"Engine ATR15 {engine_atr:.8g}" if engine_atr is not None else ""
             atr = regime.get("reference_atr")
-            atr_text = f" | ATR {atr:.8g}" if atr is not None else ""
-            pa_row = len(panels["PRICE ACTION"])
-            lines.append(f"  PA context: {context}{atr_text} (first-received bars; not a trade signal)")
-            panels["PRICE ACTION"].append(f"{symbol}  {context}{atr_text}")
-            atr_clock = (pa_row, f"{symbol}  {context}") if regime.get("atr_origin") == "robinhood_native_atr14" else None
+            use_native_atr = native_enabled and native_atr and atr is not None
+            reference = f"Native ATR14 {atr:.8g}" if use_native_atr else local
+            context_detail = " | ".join(filter(None, (efficiency_text, reference)))
+            stale_detail = " | ".join(filter(None, (efficiency_text, local)))
+            detail = f" | {context_detail}" if context_detail else ""
+            lines.append(f"  PA context: {context}{detail} (first-received bars; research only)")
+            pa = panels["PRICE ACTION"]
+            pa.append(f"{symbol}  {context}")
             native = stream.get("native_interpretation", {})
             native_rows = []
             effective_at = []
@@ -261,91 +267,102 @@ class TerminalMonitor:
 
             seconds = int(stream["timeframe"]) * 60 if stream["timeframe"].isdigit() else 86400
             max_age = max(120, 2 * seconds)
-            clock_slots.append((symbol, close, max_age, daily, market_row,
-                                quality_row, readiness_row if not counts else None,
-                                native_header, tuple(native_rows), atr_clock))
+            setups = summary.get("active_structures", {}).get("live_setups", ())[:3]
+            setup_lines = [(f"Active: {setup['family']} / {setup['status']}", _level_text(setup.get("levels", {})))
+                           for setup in setups]
+            key_levels = {level["label"]: level["price"] for level in summary.get("key_levels", ())}
+            prior_labels = ("PrevDayHi", "PrevDayLo") if daily else ("PDH", "PDL")
+            if not any(label in key_levels for label in prior_labels):
+                prior_labels = ("20B Hi", "20B Lo")
+            levels = " · ".join(f"{label} {key_levels[label]:.8g}"
+                                for label in ("SwHi", "SwLo", *prior_labels) if label in key_levels)
 
-            def show_levels(event):
-                coords = _level_text(_setup_levels(event))
-                if coords:
-                    lines.append(f"    {coords}")
-                    panels["PRICE ACTION"].append(coords)
-
-            def show_setups():
-                setups = summary.get("active_structures", {}).get("live_setups", ())
-                for setup in setups[:3]:
-                    description = f"Active: {setup['family']} / {setup['status']}"
-                    coords = _level_text(setup.get("levels", {}))
-                    details = f" | {coords}" if coords else ""
-                    lines.append(f"  {description}{details}")
-                    panels["PRICE ACTION"].append(f"{description}{details}")
-                key_levels = {level["label"]: level["price"] for level in summary.get("key_levels", ())}
-                prior = ("PrevDayHi", "PrevDayLo") if daily else ("PDH", "PDL")
-                if not any(label in key_levels for label in prior):
-                    prior = ("20B Hi", "20B Lo")
-                levels = " · ".join(f"{label} {key_levels[label]:.8g}"
-                                    for label in ("SwHi", "SwLo", *prior) if label in key_levels)
-                if levels:
-                    lines.append(f"  Levels: {levels}")
-                    panels["PRICE ACTION"].append(f"Levels: {levels}")
-
-            def history():
-                groups = stream["display"]["groups"]
-                prior = next((group["events"][-1] for group in reversed(groups) if group["events"]), None)
-                if prior:
-                    observed_at = _ny(prior["observed_at"])
-                    description = f"{prior['family']} / {prior['status']}"
-                    lines.append(f"  HISTORY (not new) {observed_at} | {description}")
-                    panels["PRICE ACTION"].extend(("HISTORY · not new",
-                                                   description))
-                    show_levels(prior)
-                    panels["PRICE ACTION"].append(observed_at)
-                    if prior.get("explanation"):
-                        lines.append(f"    {prior['explanation']}")
-                        panels["PRICE ACTION"].append(prior["explanation"])
-            if previous is None:
-                lines.append("  BASELINE: history loaded; no historical PA events announced as new.")
-                panels["PRICE ACTION"].append("BASELINE · no new announcements")
-                history()
-                show_setups()
-                continue
             current = []
             held = 0
             held_reason = ("quarantine" if counts else "fixed end" if fixed_end else
                            "stale/future bar" if freshness != "RECENT" else
                            "no usable acquisition" if acquisition in ("NO_RECEIPT", "NO_USABLE_BARS") else None)
-            for group in stream["display"]["groups"]:
-                for event in group["events"]:
-                    timestamp = parse_time(event["observed_at"])
-                    if not previous < timestamp <= close or not self._record_id(event["id"]):
-                        continue
-                    if held_reason or timestamp > now or _bar_freshness(timestamp, now, max_age, daily) != "RECENT":
-                        held += 1
-                        continue
-                    current.append(event)
-            if not current:
-                lines.append("  No new key PA event (display filter applied).")
-                panels["PRICE ACTION"].append("No new key PA event")
+            groups = stream["display"]["groups"]
+            if previous is None:
+                lines.append("  BASELINE: history loaded; no historical PA events announced as new.")
+            else:
+                for group in groups:
+                    for event in group["events"]:
+                        timestamp = parse_time(event["observed_at"])
+                        if not previous < timestamp <= close or not self._record_id(event["id"]):
+                            continue
+                        if (held_reason or timestamp > now or (daily and timestamp != close)
+                                or _bar_freshness(timestamp, now, max_age, daily) != "RECENT"):
+                            held += 1
+                            continue
+                        current.append(event)
+                if not current:
+                    lines.append("  No new key PA event (display filter applied).")
+
             event_warning = " [DATA_QUALITY_UNKNOWN; exploratory]" if "DATA_QUALITY_UNKNOWN" in flags else ""
+            tag = " [UNKNOWN]" if event_warning else ""
             for event in current:
                 lines.append(f"  NEW PA{event_warning} {_ny(event['observed_at'])} | "
                              f"{event['family']} / {event['status']} / {event.get('direction', 'neutral')} "
                              f"| id={event['id']}")
-                tag = " [UNKNOWN]" if event_warning else ""
-                panels["PRICE ACTION"].extend((f"NEW PA{tag} · {event['family']}",
-                    f"{event['status']} / {event.get('direction', 'neutral')}"))
-                show_levels(event)
-                panels["PRICE ACTION"].append(_ny(event["observed_at"]))
+                coords = _level_text(_setup_levels(event))
+                if coords:
+                    lines.append(f"    {coords}")
                 if event.get("explanation"):
                     lines.append(f"    {event['explanation']}")
-                    panels["PRICE ACTION"].append(event["explanation"])
+
+            recent = current[-1] if current else next(
+                (group["events"][-1] for group in reversed(groups) if group["events"]), None)
+            context_tail = []
+            if recent:
+                coords = _level_text(_setup_levels(recent))
+                observed_at = _ny(recent["observed_at"])
+                description = f"{recent['family']} / {recent['status']}"
+                if current:
+                    pa.append(f"NEW PA{tag} · {recent['family']} {recent['status']}")
+                    context_tail.append(f"{recent.get('direction', 'neutral')} · {observed_at}")
+                else:
+                    pa.extend(("HISTORY · not new", description))
+                    lines.append(f"  HISTORY (not new) {observed_at} | {description}")
+                    context_tail.append(observed_at)
+                    if coords:
+                        lines.append(f"    {coords}")
+                    if recent.get("explanation"):
+                        lines.append(f"    {recent['explanation']}")
+                if coords:
+                    pa.append(coords)
+                if recent.get("explanation"):
+                    context_tail.append(recent["explanation"])
+            else:
+                pa.append("BASELINE · no new announcements" if previous is None else "No new key PA event")
+
+            if levels:
+                pa.append(f"Levels: {levels}")
+                lines.append(f"  Levels: {levels}")
+            pa.extend(description for description, _ in setup_lines)
+            atr_clock = (len(pa), stale_detail) if use_native_atr else None
+            if context_detail:
+                pa.append(context_detail)
             if held:
+                reason = held_reason or "older catch-up"
                 lines.append(f"  Not announced as current: {held} display-filtered event(s) "
-                             f"({held_reason or 'older catch-up'}); journal evidence retained.")
-                panels["PRICE ACTION"].append(f"Held {held} · {held_reason or 'older catch-up'}")
-            if not current:
-                history()
-            show_setups()
+                             f"({reason}); journal evidence retained.")
+                pa.append(f"Held {held} · {reason}")
+            pa.extend(context_tail)
+            for event in reversed(current[:-1]):
+                coords = _level_text(_setup_levels(event))
+                pa.append(f"NEW PA{tag} · {event['family']} {event['status']}")
+                if coords:
+                    pa.append(coords)
+                if event.get("explanation"):
+                    pa.append(event["explanation"])
+            for description, coords in setup_lines:
+                lines.append(f"  {description}" + (f" | {coords}" if coords else ""))
+                if coords:
+                    pa.append(coords)
+            clock_slots.append((symbol, close, max_age, daily, market_row,
+                                quality_row, readiness_row if not counts else None,
+                                native_header, tuple(native_rows), atr_clock))
         return {"text": "\n".join(lines), "panels": panels, "round": self.round,
                 "timestamp": parse_time(now).isoformat(), "source": source, "fixed_end": fixed_end,
                 "risk": risk, "symbol_count": len(self.symbols), "clock_slots": tuple(clock_slots),

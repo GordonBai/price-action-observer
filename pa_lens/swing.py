@@ -3,7 +3,7 @@ import argparse
 from collections import defaultdict
 from collections.abc import Sequence
 import csv
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timedelta, timezone
 import json
 import math
@@ -31,7 +31,8 @@ def add_arguments(parser):
     parser.add_argument('--focus-bars', type=int, default=DEFAULT_FOCUS_BARS,
                         help='recent trading sessions to highlight (5..120, default: 25)')
     parser.add_argument('--input', help='offline canonical daily JSONL or CSV, incompatible with live options')
-    parser.add_argument('--db', default=':memory:', help='optional SQLite journal path (default: in memory)')
+    parser.add_argument('--db', default=':memory:',
+                        help='optional SQLite journal path under local_data/ or outside the project (default: in memory)')
     parser.add_argument('--output', choices=('text', 'jsonl'), help='text on a TTY, JSONL when piped')
     live = parser.add_argument_group('live Robinhood options', argument_default=argparse.SUPPRESS)
     live.add_argument('--warmup-days', type=int, help='calendar-day lookback (60..1825, default: 250)')
@@ -46,7 +47,7 @@ def add_arguments(parser):
 
 def _offline_rows(path, symbols, now):
     """Validate canonical rows and order each independent stream by close."""
-    groups = defaultdict(list)
+    groups = defaultdict(dict)
     is_csv = path.suffix.lower() == '.csv'
     with path.open(encoding='utf-8-sig', newline='') as handle:
         records = csv.DictReader(handle) if is_csv else handle
@@ -70,17 +71,69 @@ def _offline_rows(path, symbols, now):
                 if bar.timeframe != 'D':
                     raise ValueError('offline swing requires timeframe D')
                 closed = parse_time(bar.time)
-                daily_session(closed)
+                session = daily_session(closed)
                 if closed > now:
                     raise ValueError('future close time rejected; use completed daily bars')
             except (ValueError, TypeError, OverflowError) as exc:
                 raise ValueError(f'{"CSV row" if is_csv else "JSONL line"} {index}: {exc}') from exc
             if symbols is None or bar.symbol in symbols:
-                groups[(bar.symbol, bar.timeframe, bar.source)].append(bar)
+                group = groups[(bar.symbol, bar.timeframe, bar.source)]
+                if session in group:
+                    _check_same_bar(group[session], bar, session)
+                else:
+                    group[session] = bar
     _require_symbols(symbols or (), {key[0] for key in groups})
     if not groups:
         raise ValueError('offline input contains no daily bars')
     return groups
+
+
+def _check_same_bar(prior, observed, session):
+    if prior != replace(observed, time=prior.time):
+        raise ValueError(f'conflicting daily bars for {observed.symbol} ({observed.source}) on {session}; '
+                         'use a separate journal for corrected history')
+
+
+def _offline_pending(journal, groups):
+    """Validate every selected stream before appending the first input bar."""
+    pending = []
+    for key, bars in groups.items():
+        stored = {}
+        for (payload,) in journal.conn.execute(
+                'SELECT payload FROM bars WHERE symbol=? AND timeframe=? AND source=? ORDER BY seq', key):
+            bar = service.normalize(json.loads(payload))
+            session = daily_session(parse_time(bar.time))
+            if session in stored:
+                raise ValueError(f'{bar.symbol} ({bar.source}) journal already contains multiple bars for {session}. '
+                                 'Use a separate --db or the default in-memory journal.')
+            stored[session] = bar
+        if stored and max(stored) > max(bars):
+            symbol, _, source = key
+            raise ValueError(f'{symbol} ({source}) journal already contains bars after this input. '
+                             'Use a separate --db or the default in-memory journal.')
+        for session, bar in sorted(bars.items()):
+            prior = stored.get(session)
+            if prior is None:
+                pending.append(bar)
+            else:
+                _check_same_bar(prior, bar, session)
+    return pending
+
+
+def _open_journal(database):
+    if database != ':memory:':
+        database = Path(database).expanduser().resolve()
+        repo = Path(__file__).resolve().parents[1]
+        if database == repo or (repo in database.parents and repo / 'local_data' not in database.parents):
+            raise ValueError('swing journals inside the project must use ignored local_data/')
+        database.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        return service.Journal(database)
+    except RuntimeError as exc:
+        if (isinstance(exc.__cause__, BlockingIOError)
+                and str(exc) == 'journal already in use by another instance or process'):
+            raise ValueError(str(exc)) from None
+        raise
 
 
 def _require_symbols(requested, available):
@@ -190,21 +243,11 @@ def run_swing(args, parser) -> int:
             [], interval='day', bounds='regular', enabled=not getattr(args, 'no_native_context', False))
         native_runtime.validate_native(symbols, start, now, specs, 'regular', adjustment)
 
-    if args.db != ':memory:':
-        Path(args.db).parent.mkdir(parents=True, exist_ok=True)
-    journal = service.Journal(args.db)
+    journal = _open_journal(args.db)
     try:
         if offline:
-            for key, bars in groups.items():
-                persisted = journal.streams.get(key)
-                cutoff = max(parse_time(bar.time) for bar in bars)
-                if persisted and parse_time(persisted['bars'][-1]['time']) > cutoff:
-                    symbol, _, source = key
-                    raise ValueError(f'{symbol} ({source}) journal already contains bars after this input. '
-                                     'Use a separate --db or the default in-memory journal.')
-            for bars in groups.values():
-                for bar in sorted(bars, key=lambda item: parse_time(item.time)):
-                    journal.ingest_observation(asdict(bar))
+            for bar in _offline_pending(journal, groups):
+                journal.ingest_observation(asdict(bar))
         else:
             try:
                 with robinhood.open_robinhood(infra_root=getattr(args, 'infra_root', None),

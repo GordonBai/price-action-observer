@@ -161,3 +161,57 @@ class SwingTests(unittest.TestCase):
         self.assertIn('250 calendar days', report)
         self.assertEqual({(args['type'], args['output']) for tool, args in calls if tool == INDICATORS},
                          {(name, 'last:2') for name in ('ema', 'atr', 'rsi', 'macd')})
+
+    def test_session_equivalent_timestamps_deduplicate_in_file_and_reused_database(self):
+        canonical = self.fixture()[-1]
+        legacy = self.fixture(legacy=True)[-1]
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'same-session.jsonl'
+            for index, (first, second) in enumerate(((canonical, legacy), (legacy, canonical))):
+                with self.subTest(first=first['time']):
+                    path.write_text('\n'.join(map(json.dumps, [first, second])))
+                    args = ['--input', str(path)]
+                    report = json.loads(self.run_cli(args))
+                    self.assertEqual(report['bar_count'], 1)
+                    self.assertEqual(report['last_bar_close'], first['time'].replace('+00:00', 'Z'))
+                    self.assertEqual(report['session_close'], canonical['time'])
+                    db = str(Path(tmp) / f'scan-{index}.db')
+                    path.write_text(json.dumps(first))
+                    self.run_cli([*args, '--db', db])
+                    path.write_text(json.dumps(second))
+                    reused = json.loads(self.run_cli([*args, '--db', db]))
+                    self.assertEqual((reused['bar_count'], reused['last_bar_close']), (1, first['time'].replace('+00:00', 'Z')))
+
+            conflicting = dict(legacy, close=13.1)
+            path.write_text('\n'.join(map(json.dumps, (canonical, conflicting))))
+            err = io.StringIO()
+            with redirect_stderr(err), self.assertRaises(SystemExit):
+                main(['swing', '--input', str(path)])
+            self.assertIn('conflicting daily bars', err.getvalue())
+            path.write_text(json.dumps(conflicting))
+            err = io.StringIO()
+            with redirect_stderr(err), self.assertRaises(SystemExit):
+                main(['swing', '--input', str(path), '--db', str(Path(tmp) / 'scan-0.db')])
+            self.assertIn('conflicting daily bars', err.getvalue())
+
+    def test_swing_rejects_unignored_project_db_and_reports_busy_lock(self):
+        row = self.fixture()[-1]
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'bar.jsonl'
+            db = Path(tmp) / 'held.db'
+            path.write_text(json.dumps(row))
+            base = ['swing', '--input', str(path)]
+            missing = Path(__file__).resolve().parents[1] / 'tests' / 'unignored-swing-review.db'
+            with patch('pa_lens.service.Journal', side_effect=AssertionError('must validate before opening')):
+                err = io.StringIO()
+                with redirect_stderr(err), self.assertRaises(SystemExit):
+                    main([*base, '--db', str(missing)])
+                self.assertIn('local_data/', err.getvalue())
+            held = Journal(db)
+            try:
+                err = io.StringIO()
+                with redirect_stderr(err), self.assertRaises(SystemExit):
+                    main([*base, '--db', str(db)])
+                self.assertIn('journal already in use', err.getvalue())
+            finally:
+                held.close()

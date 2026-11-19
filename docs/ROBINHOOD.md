@@ -79,8 +79,11 @@ bar fields and requires `timeframe=D`. It sorts by close within each
 `(symbol, timeframe, source)` stream and scans all input symbols unless a
 filter is supplied. `--input` excludes live options such as `--warmup-days`,
 `--adjustment`, `--strict-interpolation` and `--infra-root`. The default
-`:memory:` journal can be overridden with `--db`. Use a separate journal
-when scanning an older offline cutoff for an existing stream. Output defaults
+`:memory:` journal can be overridden with `--db`. Use `local_data/` for
+in-project journal files. Identical canonical and legacy rows for the same
+session count once, using the first timestamp received. Conflicting rows
+require choosing one version of that session. Use a separate journal when
+scanning an older offline cutoff for an existing stream. Output defaults
 to text on a TTY and one JSONL record per stream when piped. Structural
 coordinates are research references with `probability=None`.
 
