@@ -86,6 +86,14 @@ class IncrementalPresentationTests(unittest.TestCase):
         self.assertEqual(p.snapshot()['stats']['raw_events'],0)
 
 class NewStructurePriorityTests(unittest.TestCase):
+    def test_structural_candidates_and_closures_are_key_changes(self):
+        from pa_lens.presentation import priority
+        for family in ('double_bottom', 'opening_reversal', 'opening_breakout_mode',
+                       'mtr_development', 'final_flag_development'):
+            for status in ('candidate', 'confirmed', 'invalidated', 'reached', 'expired'):
+                with self.subTest(family=family, status=status):
+                    self.assertEqual(priority(event(0, family, status)), 3)
+
     def test_confirmed_failed_failure_is_key_change_but_candidate_not(self):
         events=[event(0,'failed_failure','candidate'),event(1,'failed_failure','confirmed')]
         result=summarize_events(events,min_priority=3)

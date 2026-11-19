@@ -12,6 +12,10 @@ import math
 VERSION='presentation/0.2'
 _BASIC={'doji','trend_bar','gap_open','body_gap','micro_gap','micro_channel','inside_bar','outside_bar'}
 _KEY={'double_bottom','double_top','three_push_wedge','range_breakout','breakout_observation','failed_breakout','failed_failure','opening_reversal','measured_move','data_gap','session_reset'}
+_STRUCTURAL_CANDIDATES = {
+    'double_bottom', 'double_top', 'three_push_wedge', 'opening_reversal',
+    'opening_breakout_mode', 'mtr_development', 'final_flag_development',
+}
 
 
 def _time(value):
@@ -25,6 +29,8 @@ def _time(value):
 
 def priority(event):
     if event['family'] in _BASIC:return 0
+    if event['family'] in _STRUCTURAL_CANDIDATES and event['status'] in ('candidate', 'confirmed', 'invalidated', 'reached', 'expired'):
+        return 3
     if event['family'] in _KEY and event['status'] in ('confirmed','invalidated','reached','expired','observed'):return 3
     if event['status']=='candidate':return 2
     return 1

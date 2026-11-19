@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 
+from .context_summary import summarize_stream
 from .core import Bar, Engine, ENGINE_VERSION
 from .presentation import PresentationProjector
 from .journal_lock import JournalLock
@@ -26,7 +27,7 @@ MAX_BODY = 65536
 MAX_STREAMS = 64
 # Pin the engine sources loaded by this process, not unrelated documentation commits.
 _code_hash = hashlib.sha256()
-for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py', 'provider_indicators.py', 'native_runtime.py', 'native_interpretation.py'):
+for _name in ('core.py', 'advanced.py', 'observations.py', 'structures.py', 'explanations.py', 'presentation.py', 'service.py', 'feed.py', 'journal_lock.py', 'analytics.py', 'timeframes.py', 'robinhood.py', 'rh_runtime.py', 'provider_indicators.py', 'native_runtime.py', 'native_interpretation.py', 'context_summary.py'):
     _path = Path(__file__).with_name(_name)
     if _path.exists():
         _code_hash.update(_name.encode() + b'\0' + _path.read_bytes())
@@ -419,8 +420,10 @@ class Journal:
                     readiness = quality['acquisition_status']
                 if quality['quarantined_count']:
                     readiness = 'DATA_REVIEW_REQUIRED'
-                result.append(dict(native_interpretation=interpret(last,native['items'],now,observation_seq,bar_quality=quality),data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
+                native_interp = interpret(last, native['items'], now, observation_seq, bar_quality=quality)
+                result.append(dict(native_interpretation=native_interp, data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
                     bar_count=stream['bar_count'], bars=list(stream['bars']), events=list(stream['events']),
+                    summary=summarize_stream(stream['bars'], stream['events'], state, native_interp),
                     display=stream['display'].snapshot(), state=state, last_bar_close=last['time'], received_at=stream['received_at'],
                     age_seconds=round(age, 2), freshness=freshness, readiness=readiness, ready=readiness == 'READY_FOR_RESEARCH'))
             ready = bool(result) and all(s['ready'] for s in result)
