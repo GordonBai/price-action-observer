@@ -8,7 +8,7 @@
 
 [English](README.md) · **简体中文**
 
-[介绍](#介绍) · [快速开始](#快速开始) · [指标与结构](#原生指标与价格结构) · [回放面板](#回放与-dashboard) · [架构](#架构) · [验证](#验证与限制)
+[介绍](#介绍) · [快速开始](#快速开始) · [日线波段扫描](#日线波段扫描) · [指标与结构](#原生指标与价格结构) · [回放面板](#回放与-dashboard) · [架构](#架构) · [验证](#验证与限制)
 </div>
 
 ## 介绍
@@ -84,7 +84,7 @@ python -m pa_lens swing --input daily-bars.jsonl --focus-bars 25
 ```bash
 python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
   --interval 5minute --start 2026-11-18T14:30:00Z --end 2026-11-18T17:20:00Z \
-  --accept-unknown --native-indicators all --native-output last:3 \
+  --native-indicators all --native-output last:3 \
   --db local_data/native-historical-demo.sqlite3
 ```
 
@@ -105,9 +105,9 @@ python knowledge/kb.py search "双底"
 ### 浏览器核对与 TUI 分开
 终端监控默认不打开浏览器。已保存的离线 Replay Dashboard 是历史快照，不是实时看盘。若要采集时同时使用认证本地面板，设置自己的随机 `PA_LENS_TOKEN`（至少16字符），再给**同一个采集进程**加 `--serve-port 8080`。打开 `http://127.0.0.1:8080/`，在页面输入token。也可在没有采集进程占用时用 `serve --db ...` 打开兼容日志；不要两个进程共写一个数据库。
 
-原生主摘要位于图表上方，完整证据可展开，本地诊断在末尾。悬停、点按、Tab聚焦可读取该根精确 OHLC、周期及 UTC/纽约时间。金点只对应**当前列表可见事件**，按 `observed_at` 可知时刻定位，不回画到早先锚点，也不新增买卖判断。历史定位隐藏后续K线、标记和当前原生语境。日线提示分开显示交易日与保守可知时间。Enter/空格读取，Escape关闭提示。
+原生主摘要位于图表上方，完整证据可展开，本地诊断在末尾。悬停、点按、Tab聚焦可读取该根精确 OHLC、周期及 UTC/纽约时间。金点只对应**当前列表可见事件**，按 `observed_at` 可知时刻定位，不回画到早先锚点，也不新增买卖判断。历史定位隐藏后续K线、标记和当前原生语境。日线提示同时显示 XNYS 交易日和记录时间。旧版离线文件可能采用下一日 UTC 零点。Enter/空格读取，Escape关闭提示。
 
-主展示默认优先级3、同形态/状态/方向15分钟冷却、同根合为一组。`--display-min-priority 2` 包含候选；`--display-cooldown-minutes 0` 关闭冷却。原始事件保留。这是编辑性展示规则，不是置信度。
+默认优先级 3 已显示双顶、双底等发展中的结构候选。同一根 K 线上的事件合并展示，同形态、状态和方向采用 15 分钟冷却。调到 `--display-min-priority 2` 还可查看失败后再失败（failed failure）等候选。使用 `--display-cooldown-minutes 0` 可关闭冷却。原始事件保留。这是编辑性展示规则，不是置信度。
 
 ## 数据质量与时间边界
 | 项目 | 契约 |
@@ -132,7 +132,10 @@ flowchart LR
   S --> I[匹配的当前原生语境]
   J --> I
   C --> E[中文解释与事件流水]
-  I --> V[TUI / 本地Dashboard]
+  E --> P[行情与结构摘要]
+  I --> P
+  P --> T[终端监控与日线扫描]
+  I --> V[本地 Dashboard]
   E --> V
   R[显式离线回放] --> C
 ```
@@ -140,6 +143,7 @@ flowchart LR
 | 路径 | 职责 |
 |---|---|
 | `wizard.py` / `terminal_monitor.py` | 结构化启动、终端显示与独立时钟 |
+| `context_summary.py` / `swing.py` | 盘中监控与日线扫描共用的市场状态、结构生命周期和参考价位 |
 | `robinhood.py` / `rh_runtime.py` | 只读取数、归一化、覆盖与质量 |
 | `provider_indicators.py` / `native_runtime.py` / `native_interpretation.py` | 原生契约、独立快照、仅当前语境 |
 | `core.py` / `observations.py` / `advanced.py` / `structures.py` | 因果结构近似与生命周期 |
@@ -153,7 +157,10 @@ flowchart LR
 表中 Python 模块位于 `pa_lens/`。
 
 ## 验证与限制
-最新验收报告各自注明日期和范围：
+P1 终端监控与日线扫描通过了 355 项测试，包含实际 Chrome 面板测试。回归覆盖新旧日线时间戳混用、修订隔离，以及原始突破已移出展示窗口后触及目标的情形。
+
+以下为各历史版本及数据集的验收记录。
+
 - [全workspace审查](docs/reports/GLOBAL_REVIEW.md)：317项测试，316通过/1可选Chromium跳过，知识库、构建与合成回放检查通过。
 - [向导、独立时钟与纽约时间修正](docs/reports/INTERACTIVE_CLOCK_ACCEPTANCE.md)：NVDA有限轮数实测；最终时间修正记录316项测试，315通过/1可选跳过。
 - [图表hover与独立TUI](docs/reports/HOVER_TUI_ACCEPTANCE.md)：实际回放hover及SOXL盘后有限轮询，注明GUI访问限制。

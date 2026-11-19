@@ -8,7 +8,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-[Overview](#overview) · [Quick start](#quick-start) · [Indicators](#native-indicators-and-price-structures) · [Dashboard](#replay-and-dashboard) · [Architecture](#architecture) · [Evidence](#verification-and-limits)
+[Overview](#overview) · [Quick start](#quick-start) · [Daily swing scan](#daily-swing-scan) · [Indicators](#native-indicators-and-price-structures) · [Dashboard](#replay-and-dashboard) · [Architecture](#architecture) · [Evidence](#verification-and-limits)
 </div>
 
 ## Overview
@@ -44,7 +44,7 @@ export RH_INFRA="$HOME/robinhood-trading-infra"
 
 Offline synthetic replay needs no Robinhood authorization. [Provider contract and supported setup](docs/ROBINHOOD.md).
 
-### 2. Start the guided monitor
+### 2. Choose a workflow in the wizard
 ```bash
 python -m pa_lens wizard
 ```
@@ -84,7 +84,7 @@ Pure candle structures remain independent. Local EMA20/RSI14/mean-TR values are 
 ```bash
 python -m pa_lens fetch-robinhood --infra-root "$RH_INFRA" --symbols SOXL \
   --interval 5minute --start 2026-11-18T14:30:00Z --end 2026-11-18T17:20:00Z \
-  --accept-unknown --native-indicators all --native-output last:3 \
+  --native-indicators all --native-output last:3 \
   --db local_data/native-historical-demo.sqlite3
 ```
 
@@ -105,9 +105,9 @@ The example is synthetic, not SOXL or trading-performance evidence. `replay` pro
 ### Browser inspection, separate from the TUI
 The monitor does not open a browser by default. A saved offline Replay Dashboard is a historical snapshot, not live monitoring. For an authenticated local panel alongside a collector, set your own random `PA_LENS_TOKEN` (at least 16 characters) and add `--serve-port 8080` to that **same process**. Open `http://127.0.0.1:8080/` and enter the token. Alternatively, `serve --db ...` can open a compatible journal when no collector owns it; never start two writers on one DB.
 
-The primary native summary appears above the chart; full provenance is expandable and local diagnostics are at the bottom. Hover, tap or Tab-focus a candle for exact OHLC, period and UTC/New York times. Gold PA markers reflect the **currently visible event list** and are placed at `observed_at`, not earlier pivot anchors or new buy/sell decisions. Historical focus hides future bars, markers and current native context. Daily tooltips separate the session date from its conservative availability timestamp. Enter/Space reads a focused item; Escape dismisses its hint.
+The primary native summary appears above the chart; full provenance is expandable and local diagnostics are at the bottom. Hover, tap or Tab-focus a candle for exact OHLC, period and UTC/New York times. Gold PA markers reflect the **currently visible event list** and are placed at `observed_at`, not earlier pivot anchors or new buy/sell decisions. Historical focus hides future bars, markers and current native context. Daily tooltips show the XNYS session date alongside the stored timestamp. Older offline files may use midnight UTC on the following day. Enter/Space reads a focused item; Escape dismisses its hint.
 
-Primary display defaults to priority3, a 15-minute same-family/status/direction cooldown and one group per bar. `--display-min-priority 2` includes candidates; `--display-cooldown-minutes 0` disables cooldown. Raw events remain available. These are editorial display controls, not confidence scores.
+Priority 3, the default, includes developing double tops, double bottoms and other structural candidates. The display groups events by bar and applies a 15-minute cooldown per family, status and direction. `--display-min-priority 2` also shows candidates such as a developing failed failure; `--display-cooldown-minutes 0` disables cooldown. Raw events remain available. These are editorial display controls, not confidence scores.
 
 ## Data quality and timing boundaries
 | Topic | Contract |
@@ -132,7 +132,10 @@ flowchart LR
   S --> I[Matching current native context]
   J --> I
   C --> E[Chinese explanations / event tape]
-  I --> V[TUI / local Dashboard]
+  E --> P[Stream summary]
+  I --> P
+  P --> T[Terminal monitor and daily swing scan]
+  I --> V[Local dashboard]
   E --> V
   R[Explicit offline replay] --> C
 ```
@@ -140,6 +143,7 @@ flowchart LR
 | Path | Responsibility |
 |---|---|
 | `wizard.py` / `terminal_monitor.py` | Structured launch, terminal presentation and independent clock |
+| `context_summary.py` / `swing.py` | Shared regime, setup lifecycle and reference levels for the monitor and daily scanner |
 | `robinhood.py` / `rh_runtime.py` | Read-only acquisition, normalization, coverage and quality |
 | `provider_indicators.py` / `native_runtime.py` / `native_interpretation.py` | Native contracts, independent snapshots, current-only context |
 | `core.py` / `observations.py` / `advanced.py` / `structures.py` | Causal structure approximations and lifecycle |
@@ -153,7 +157,10 @@ flowchart LR
 Python modules in the table live under `pa_lens/`.
 
 ## Verification and limits
-Newest acceptance reports, each with its own date/scope:
+The P1 terminal and swing release passed 355 tests, including the Chrome dashboard test. Coverage includes mixed-format daily timestamps, revision quarantine, and measured-move resolutions after the original breakout has aged out of the display window.
+
+Earlier acceptance reports cover the following releases and datasets.
+
 - [Global workspace review](docs/reports/GLOBAL_REVIEW.md):317 tests,316 passed/1 optional Chromium skip; knowledge, build and synthetic-replay checks.
 - [Interactive wizard, independent clock and New York-time correction](docs/reports/INTERACTIVE_CLOCK_ACCEPTANCE.md): bounded real NVDA tests; final documented correction suite316 tests,315 passed/1 optional skip.
 - [Chart hover and separate TUI](docs/reports/HOVER_TUI_ACCEPTANCE.md): actual replay hover plus bounded after-hours SOXL polling; GUI access limitations disclosed.

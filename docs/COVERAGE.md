@@ -1,4 +1,4 @@
-# Observation coverage and timing contract · current v0.7 behavior
+# Observation coverage and timing contract
 
 44 curated knowledge cards are not 44 completed detectors. These are original, deterministic engineering approximations, not official Brooks algorithms or empirically calibrated probabilities. Source-reading provenance and limits remain in `knowledge/concepts.json`. No full-course/video mastery is claimed.
 
@@ -49,6 +49,11 @@ pack is EMA20, ATR14, RSI14 and MACD.
 
 `swing` scans closed daily bars from Robinhood or canonical offline JSONL/CSV.
 It warms on the full input and highlights structures in the requested recent
-focus window. The wizard offers monitor and swing modes. Structural coordinates
+focus window. Recent resolutions cover the latest five bars at most. When an
+older target is reached or invalidated in that window, the report retains the
+original setup identity and reference levels, including after a journal restart.
+Intraday PDH and PDL require complete regular-session coverage of the preceding
+XNYS session. A 300-bar display window cannot cover all 390 one-minute bars of
+a normal session. The wizard offers monitor and swing modes. Structural coordinates
 are research references with `probability=None`. Browser canvas level overlays
 and Phase 2 `--htf` linkage remain future work.

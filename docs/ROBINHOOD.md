@@ -101,7 +101,7 @@ uses the latest up to 15 true ranges, first bar high-low, with tick floor; not
 Wilder ATR. These values and editorial presentation priorities are not calibrated
 probabilities.
 
-## Active runtime (v0.5)
+## Fetching and polling
 
 `fetch-robinhood` requests an explicit `--start` / `--end` RFC3339 range.
 `poll-robinhood` repeats read-only requests; `--once` or `--count N` bounds the run.
@@ -225,7 +225,7 @@ later provider revisions and does not establish what was known in real time on
 a historical date. Provider indicator reports must stay separate from local
 indicator calculations and signals.
 
-## Native indicator runtime (v0.6)
+## Native indicator requests
 
 Supported intraday intervals automatically request EMA20, VWAP, ATR14, RSI14
 and classic pivots. Regular daily mode requests EMA20, ATR14, RSI14 and MACD
@@ -289,7 +289,7 @@ symbols inherit the single restored window when one exists (displayed per reques
 If refresh fails, native current-value rows are hidden and marked DISCONNECTED;
 a recently received response is never used as a substitute for point-time freshness.
 
-## Native-first interpretation contract (v0.7)
+## Interpreting native indicators
 Current snapshot interpretation uses provider-native context, exact period/source
 semantics and matching latest-bar effective time. Receipt must be no later than
 generation and after_bar_seq cannot exceed the observed tape. It never restores
@@ -300,5 +300,8 @@ Intraday value age is bounded by max(120s,2×interval). Daily freshness follows
 the XNYS calendar. Receipt age is reported independently.
 Known quarantined bar revisions/late arrivals block comparison with the uncorrected
 first-received close. Unknown input/source quality remains visible. Automatic
-Context requests are merged by interval and effective parameters. The all-18
-selection includes EMA20. EMA9 is available as a separate parameter choice.
+context requests with the same interval and effective parameters share one call.
+For overlapping requests the widest output wins. A context indicator requests at
+least two points, even if an explicit request specifies `latest` or `last:1`.
+Daily MACD reports a histogram change only across consecutive XNYS sessions.
+The all-18 selection includes EMA20. EMA9 is available as a separate parameter choice.

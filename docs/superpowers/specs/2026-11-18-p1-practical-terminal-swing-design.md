@@ -1,7 +1,7 @@
 # P1 Design: Practical Terminal Monitor & Daily Swing Scanner
 
 Date: 2026-11-18
-Status: Ready for User Approval (Builder Check Completed)
+Status: P1 implemented and verified. The [terminal guide](../../TERMINAL_MONITOR.md) describes the shipped workflows.
 Scope: Phase 1 (Single-Timeframe Practical Base & Terminal Workflows; Phase 2 Multi-Timeframe `--htf/--ltf` Alignment and Browser Canvas Level Overlays are deferred)
 
 ---

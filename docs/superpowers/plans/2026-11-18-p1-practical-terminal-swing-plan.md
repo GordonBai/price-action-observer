@@ -1,6 +1,6 @@
 # P1 Practical Terminal Monitor & Daily Swing Scanner Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Completed.** Tasks 1–5 shipped together. The steps below record the original implementation plan. See the [terminal guide](../../TERMINAL_MONITOR.md) for the current workflows.
 
 **Goal:** Unblock default Robinhood OHLCV ingestion on omitted `interpolated` markers, align daily bars and native indicators to actual `XNYS` session closes with weekend-aware freshness, expand intraday/daily native indicator packs, and ship an upgraded live intraday TUI plus a one-shot `pa_lens swing` multi-ticker daily scanner.
 
