@@ -215,3 +215,38 @@ class SwingTests(unittest.TestCase):
                 self.assertIn('journal already in use', err.getvalue())
             finally:
                 held.close()
+
+    def test_live_reused_database_rejects_overlapping_legacy_robinhood_session(self):
+        now = datetime.now(timezone.utc)
+        sessions = calendar().sessions_in_range((now - timedelta(days=14)).date(),
+                                                (now - timedelta(days=2)).date())
+        session = sessions[-1].date()
+        legacy = datetime.combine(session + timedelta(days=1), datetime.min.time(), timezone.utc)
+        row = dict(self.fixture()[-1], symbol='NVDA', source='robinhood:day:regular:split', time=legacy.isoformat())
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'legacy.jsonl'
+            path.write_text(json.dumps(row))
+            flags = ['--db', str(Path(tmp) / 'live.db'), '--symbols', 'NVDA']
+            self.run_cli([*flags, '--input', str(path)])
+            with patch('pa_lens.robinhood.open_robinhood', side_effect=AssertionError('must preflight journal')):
+                err = io.StringIO()
+                with redirect_stderr(err), self.assertRaises(SystemExit):
+                    main(['swing', *flags])
+                self.assertIn(f'legacy daily timestamp for {session}', err.getvalue())
+                self.assertIn('separate --db', err.getvalue())
+            stored = json.loads(self.run_cli([*flags, '--input', str(path)]))
+            self.assertEqual((stored['bar_count'], stored['last_bar_close']),
+                             (1, row['time'].replace('+00:00', 'Z')))
+
+            old_session = calendar().date_to_session((now - timedelta(days=90)).date(), direction='previous').date()
+            old_legacy = datetime.combine(old_session + timedelta(days=1), datetime.min.time(), timezone.utc)
+            path.write_text(json.dumps(dict(row, time=old_legacy.isoformat())))
+            old_flags = ['--db', str(Path(tmp) / 'old.db'), '--symbols', 'NVDA']
+            self.run_cli([*old_flags, '--input', str(path)])
+            with patch('pa_lens.robinhood.open_robinhood', side_effect=ValueError('transport reached')) as opened:
+                for allowed in ([*old_flags, '--warmup-days', '60'], [*flags, '--adjustment', 'none']):
+                    err = io.StringIO()
+                    with redirect_stderr(err), self.assertRaises(SystemExit):
+                        main(['swing', *allowed])
+                    self.assertIn('transport reached', err.getvalue())
+                self.assertEqual(opened.call_count, 2)

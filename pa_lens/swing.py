@@ -120,6 +120,20 @@ def _offline_pending(journal, groups):
     return pending
 
 
+def _check_live_journal(journal, keys, start, end):
+    """Protect an imported legacy bar's availability when its session will be requested again."""
+    for symbol, timeframe, source in sorted(keys):
+        for (stamp,) in journal.conn.execute(
+                """SELECT time FROM bars WHERE symbol=? AND timeframe=? AND source=?
+                   AND time GLOB '*T00:00:00Z'""", (symbol, timeframe, source)):
+            legacy = parse_time(stamp)
+            # Robinhood requests and filters daily bars by their midnight-UTC date labels.
+            if start <= legacy - timedelta(days=1) < end:
+                session = daily_session(legacy)
+                raise ValueError(f'{symbol} ({source}) journal contains a legacy daily timestamp for {session} '
+                                 'in the requested window. Use a separate --db or the default in-memory journal.')
+
+
 def _open_journal(database):
     if database != ':memory:':
         database = Path(database).expanduser().resolve()
@@ -249,6 +263,7 @@ def run_swing(args, parser) -> int:
             for bar in _offline_pending(journal, groups):
                 journal.ingest_observation(asdict(bar))
         else:
+            _check_live_journal(journal, keys, start, now)
             try:
                 with robinhood.open_robinhood(infra_root=getattr(args, 'infra_root', None),
                                              binary=getattr(args, 'codex_binary', 'codex'), timeout=timeout) as provider:
