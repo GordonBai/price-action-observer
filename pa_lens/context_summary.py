@@ -1,9 +1,10 @@
 """Project the current closed-bar context from a stream's retained observations."""
 from collections.abc import Sequence
+from datetime import timedelta
 import math
 
 from .core import parse_time
-from .timeframes import NY
+from .timeframes import NY, calendar, consecutive_daily
 
 
 _AVAILABLE = 'AVAILABLE_SOURCE_UNKNOWN'
@@ -86,6 +87,19 @@ def _setup_levels(event):
     return levels
 
 
+def _breakout_key(event):
+    anchors = event.get('anchors', {})
+    key = (anchors.get('breakout_time'), event.get('direction'),
+           anchors.get('range_high'), anchors.get('range_low'))
+    return key if all(value is not None for value in key) else None
+
+
+def _resolve_episode(episode, event, observed, index, status):
+    episode['setup'].update(status=status, observed_at=event['observed_at'],
+                            explanation=event.get('explanation', ''))
+    episode.update(observed=observed, index=index)
+
+
 def _active_structures(segment_times, events, focus_count):
     live, recent = [], []
     if not segment_times or not focus_count:
@@ -94,7 +108,7 @@ def _active_structures(segment_times, events, focus_count):
     recent_start = segment_times[-min(focus_count, len(segment_times), 5)]
     segment_start, latest = segment_times[0], segment_times[-1]
 
-    episodes, confirmation_ids = {}, {}
+    episodes, confirmation_ids, breakout_ids = {}, {}, {}
     for index, event in enumerate(events):
         family, status = event['family'], event['status']
         if family not in _ACTIONABLE and family not in ('trend_line_retest', 'measured_move'):
@@ -106,10 +120,8 @@ def _active_structures(segment_times, events, focus_count):
         if family == 'measured_move':
             episode = episodes.get(confirmation_ids.get(parent))
             if episode is not None and status in ('reached', 'invalidated'):
-                episode['setup'].update(status=status, target_state=status, observed_at=event['observed_at'],
-                                        explanation=event.get('explanation', ''))
-                episode['observed'] = observed
-                episode['index'] = index
+                _resolve_episode(episode, event, observed, index, status)
+                episode['setup']['target_state'] = status
             continue
 
         parent_episode = episodes.get(parent)
@@ -138,6 +150,15 @@ def _active_structures(segment_times, events, focus_count):
                 setup['target_state'] = 'pending'
         episodes[root] = dict(setup=setup, observed=observed, index=index, latest_family=family)
 
+        if status == 'confirmed' and family in ('breakout_observation', 'failed_breakout'):
+            key = _breakout_key(event)
+            if key is not None:
+                if family == 'breakout_observation':
+                    breakout_ids[key] = root
+                elif key in breakout_ids:
+                    original = episodes[breakout_ids.pop(key)]
+                    _resolve_episode(original, event, observed, index, 'invalidated')
+
     for episode in sorted(episodes.values(), key=lambda row: (row['observed'], row['index']), reverse=True):
         setup = episode['setup']
         status = setup['status']
@@ -164,24 +185,30 @@ def _swing_levels(segment):
 def _prior_session_levels(bars, times):
     if len(bars) < 2:
         return
-    if bars[-1]['timeframe'] == 'D':
-        yield 'prior_session_high', 'PrevDayHi', bars[-2]['high'], 'swing'
-        yield 'prior_session_low', 'PrevDayLo', bars[-2]['low'], 'swing'
+    timeframe = bars[-1]['timeframe']
+    if timeframe == 'D':
+        if consecutive_daily(*times[-2:]):
+            yield 'prior_session_high', 'PrevDayHi', bars[-2]['high'], 'swing'
+            yield 'prior_session_low', 'PrevDayLo', bars[-2]['low'], 'swing'
         return
-    session = times[-1].astimezone(NY).date()
-    prior_date = None
-    prior = []
-    for bar, time in zip(reversed(bars), reversed(times)):
-        date = time.astimezone(NY).date()
-        if date == session:
-            continue
-        if prior_date is not None and date != prior_date:
-            break
-        prior_date = date
-        prior.append(bar)
-    if prior:
-        yield 'prior_session_high', 'PDH', max(bar['high'] for bar in prior), 'swing'
-        yield 'prior_session_low', 'PDL', min(bar['low'] for bar in prior), 'swing'
+
+    schedule = calendar()
+    try:
+        session = schedule.previous_session(times[-1].astimezone(NY).date().isoformat())
+    except (ValueError, OverflowError):
+        # Manual intraday feeds can include non-session dates or older history.
+        return
+    opened = schedule.session_open(session).to_pydatetime()
+    closed = schedule.session_close(session).to_pydatetime()
+    step = timedelta(minutes=int(timeframe))
+    expected, remainder = divmod(closed - opened, step)
+    if remainder:
+        return
+    prior = [(bar, time) for bar, time in zip(bars, times) if opened < time <= closed]
+    if len(prior) != expected or any(time != opened + i * step for i, (_, time) in enumerate(prior, 1)):
+        return
+    yield 'prior_session_high', 'PDH', max(bar['high'] for bar, _ in prior), 'swing'
+    yield 'prior_session_low', 'PDL', min(bar['low'] for bar, _ in prior), 'swing'
 
 
 def _level_candidates(bars, times, segment, live_setups, native):

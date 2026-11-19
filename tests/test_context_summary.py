@@ -25,6 +25,23 @@ def bars(count, timeframe='D'):
     ]
 
 
+def intraday_session(label, timeframe='5'):
+    schedule = calendar()
+    opened, closed = schedule.session_open(label), schedule.session_close(label)
+    period = timedelta(minutes=int(timeframe))
+    return [
+        dict(symbol='XYZ', timeframe=timeframe, time=(opened + i * period).isoformat(),
+             open=100, high=101, low=99, close=100, source='test')
+        for i in range(1, (closed - opened) // period + 1)
+    ]
+
+
+def prior_levels(tape):
+    result = summarize_stream(tape, [], {'bars_in_segment': 1})
+    return {row['label']: row['price'] for row in result['key_levels']
+            if row['label'] in {'PDH', 'PDL', 'PrevDayHi', 'PrevDayLo'}}
+
+
 def event(id_, bar, family, status='candidate', **fields):
     return dict(id=id_, observed_at=bar['time'].replace('+00:00', 'Z'), family=family,
                 status=status, direction='long', explanation='结构观察', **fields)
@@ -78,6 +95,28 @@ class StreamSummaryTests(unittest.TestCase):
         final, = summarize_stream(tape, events, {})['active_structures']['live_setups']
         self.assertEqual((final['id'], final['status'], final['stage']), ('0', 'candidate', 'breakout_failed'))
         self.assertEqual(final['levels'], {'range_high': 101, 'range_low': 99})
+
+    def test_matching_failed_breakout_retires_only_its_original_observation(self):
+        tape = bars(7)
+        frozen = dict(breakout_time=tape[2]['time'], range_high=101, range_low=99, level=101)
+        unrelated_time = event('earlier', tape[1], 'breakout_observation', 'confirmed',
+                               anchors=dict(frozen, breakout_time=tape[1]['time']))
+        original = event('original', tape[2], 'breakout_observation', 'confirmed', anchors=frozen)
+        unrelated_range = event('other-range', tape[2], 'breakout_observation', 'confirmed',
+                                anchors=dict(frozen, range_low=98))
+        unrelated_direction = dict(event('other-direction', tape[2], 'breakout_observation', 'confirmed',
+                                         anchors=frozen), direction='short')
+        failure = event('failure', tape[4], 'failed_breakout', 'confirmed', anchors=dict(frozen, tested=True))
+        unlinked_failure = event('unlinked', tape[6], 'failed_breakout', 'confirmed', anchors={})
+        events = [unrelated_time, original, unrelated_range, unrelated_direction, failure, unlinked_failure]
+        before = summarize_stream(tape[:4], events, {})['active_structures']
+        self.assertIn('original', {row['id'] for row in before['live_setups']})
+        after = summarize_stream(tape, events, {})['active_structures']
+        self.assertEqual({(row['id'], row['status']) for row in after['live_setups']},
+                         {(row['id'], 'confirmed') for row in events if row is not original})
+        retired, = after['recent_resolved']
+        self.assertEqual((retired['id'], retired['status'], retired['observed_at']),
+                         ('original', 'invalidated', failure['observed_at']))
 
     def test_mtr_retest_and_attempts_are_observed_in_the_focus_window(self):
         tape = bars(4)
@@ -136,7 +175,51 @@ class StreamSummaryTests(unittest.TestCase):
         self.assertEqual(result['regime']['efficiency_20'], 1)
         self.assertEqual(result['regime']['focus_window_bars'], 22)
         self.assertEqual([row['id'] for row in result['active_structures']['live_setups']], ['new'])
-        self.assertEqual({row['label']: row['price'] for row in result['key_levels']}, {'PDH': 106, 'PDL': 90})
+        self.assertEqual(result['key_levels'], [])
+
+    def test_intraday_prior_levels_require_the_actual_complete_regular_session(self):
+        friday = intraday_session('2026-11-13')
+        friday[0].update(high=110, low=90)
+        premarket = dict(friday[0], time='2026-11-13T14:30:00Z', high=120, low=80)
+        afterhours = dict(friday[-1], time='2026-11-13T21:05:00Z', high=115, low=85)
+        monday = intraday_session('2026-11-16')[:1]
+        tuesday = intraday_session('2026-11-17')[:1]
+        with self.subTest(label='regular prices exclude extended hours'):
+            self.assertEqual(prior_levels([premarket, *friday, afterhours, *monday]), {'PDH': 110, 'PDL': 90})
+        for label, prior, current in (
+            ('missing session', friday, tuesday),
+            ('truncated head', friday[1:], monday),
+            ('truncated tail', friday[:-1], monday),
+            ('missing internal bar', friday[:12] + friday[13:], monday),
+        ):
+            with self.subTest(label=label):
+                self.assertEqual(prior_levels(prior + current), {})
+
+    def test_intraday_early_close_and_holiday_use_the_exchange_calendar(self):
+        prior = intraday_session('2025-07-03', '1')
+        current = intraday_session('2025-07-07', '1')[:1]
+        prior[6].update(high=113, low=88)
+        self.assertEqual(len(prior), 210)
+        self.assertEqual(prior_levels(prior + current), {'PDH': 113, 'PDL': 88})
+
+    def test_daily_prior_levels_require_adjacent_sessions_with_legacy_timestamps(self):
+        friday, monday, tuesday = bars(3)
+        friday.update(time='2026-11-14T00:00:00Z', high=107, low=96)
+        monday.update(time='2026-11-16T21:00:00Z')
+        tuesday.update(time='2026-11-18T00:00:00Z')
+        self.assertEqual(prior_levels([friday, monday]), {'PrevDayHi': 107, 'PrevDayLo': 96})
+        self.assertEqual(prior_levels([friday, tuesday]), {})
+
+    def test_manual_intraday_tape_outside_calendar_still_projects(self):
+        for previous, current in (
+            ('1999-11-12T21:00:00Z', '1999-11-15T14:31:00Z'),
+            ('1500-11-12T21:00:00Z', '1500-11-15T14:31:00Z'),
+            ('2026-11-13T21:00:00Z', '2026-11-15T14:31:00Z'),
+        ):
+            with self.subTest(current=current):
+                tape = bars(2, '1')
+                tape[0]['time'], tape[1]['time'] = previous, current
+                self.assertEqual(prior_levels(tape), {})
 
     def test_prefix_is_deterministic_and_inputs_are_detached(self):
         tape = bars(5)
