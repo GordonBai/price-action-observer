@@ -135,6 +135,12 @@ def acquire_native(provider,journal,symbols,start,end,specs,*,bounds='regular',a
     return output
 
 
+def _output_width(output):
+    if output == 'series':
+        return float('inf')
+    return 1 if output == 'latest' else int(output.removeprefix('last:'))
+
+
 def context_specs(specs, interval='5minute', enabled=True, bounds='regular'):
     result = list(specs)
     if not enabled or bounds not in ('regular', 'extended'):
@@ -147,13 +153,17 @@ def context_specs(specs, interval='5minute', enabled=True, bounds='regular'):
         return result
     for name, parameters in pack.items():
         matches = [
-            spec for spec in result
+            index for index, spec in enumerate(result)
             if spec['type'] == name and spec['interval'] == interval
             and {**INDICATOR_DEFAULTS[name], **spec['parameters']} == parameters
         ]
         if not matches:
             result.append(dict(type=name, parameters=parameters.copy(), interval=interval, output='last:2'))
-        for spec in matches:
-            if spec['output'] == 'latest':
-                spec['output'] = 'last:2'
+            continue
+        widest = max((result[index] for index in matches), key=lambda spec: _output_width(spec['output']))
+        if widest['output'] in ('latest', 'last:1'):
+            widest['output'] = 'last:2'
+        result[matches[0]] = widest
+        for index in reversed(matches[1:]):
+            del result[index]
     return result

@@ -277,19 +277,15 @@ def run_swing(args, parser) -> int:
             except robinhood.RobinhoodError as exc:
                 raise ValueError(str(exc)) from None
         observed_at = datetime.now(timezone.utc)
-        streams = [s for s in journal.snapshot(now=observed_at)['streams']
-                   if (s['symbol'], s['timeframe'], s['source']) in keys]
+        snapshot = journal.snapshot(now=observed_at, focus_bars=args.focus_bars, include_native_context=bool(specs))
+        streams = [s for s in snapshot['streams'] if (s['symbol'], s['timeframe'], s['source']) in keys]
         _require_symbols(symbols or (), {s['symbol'] for s in streams})
         order = {symbol: i for i, symbol in enumerate(symbols or ())}
         streams.sort(key=lambda s: (order.get(s['symbol'], 0), s['symbol'], s['source']))
-        for stream in streams:
-            if not specs:
-                stream['native_interpretation'] = {'status': 'NOT_REQUESTED'}
-                stream.pop('summary')
-            if acquisition:
+        if acquisition:
+            for stream in streams:
                 stream['scan_acquisition_status'] = acquisition['status']
                 stream['omitted_emitted'] = acquisition['omitted_emitted_by_symbol'].get(stream['symbol'], 0)
-            stream['summary'] = _focused_summary(stream, args.focus_bars)
     finally:
         journal.close()
     if terminal_output(args.output, sys.stdout) == 'text':

@@ -85,4 +85,3 @@ class DailyTests(unittest.TestCase):
         self.assertFalse(is_daily_fresh(fri, datetime(2026, 11, 20, 20, 0, tzinfo=timezone.utc))) # Future close vs now
         self.assertTrue(consecutive_daily(daily_close("2026-11-25"), early_close))
         self.assertEqual(next_daily_close(datetime(2026, 11, 27, 17, 59, 0, tzinfo=timezone.utc), 10), 70)
-

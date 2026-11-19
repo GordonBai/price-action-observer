@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 
-from .context_summary import summarize_stream
+from .context_summary import RECENT_RESOLUTION_BARS, summarize_stream
 from .core import Bar, Engine, ENGINE_VERSION
 from .presentation import PresentationProjector
 from .journal_lock import JournalLock
@@ -146,12 +146,21 @@ class Journal:
 
     def _new(self):
         return {'engine': Engine(self.config), 'bars': deque(maxlen=300),
+                'target_parents': deque(maxlen=RECENT_RESOLUTION_BARS),
                 'display':PresentationProjector(**self.display_config), 'events': deque(maxlen=500), 'bar_count': 0, 'received_at': None}
 
     def _apply(self, data, received_at, bar_seq=None):
         key = (data['symbol'], data['timeframe'], data['source'])
         stream = self.streams.setdefault(key, self._new())
-        events = stream['engine'].update(Bar.from_dict(data))
+        engine = stream['engine']
+        pending_targets = tuple(engine.projections)
+        events = engine.update(Bar.from_dict(data))
+        closed_targets = {event['parent_id'] for event in events if event['family'] == 'measured_move'}
+        # The engine removes a projection when it emits a terminal child. Keep its
+        # actual confirmation for the five-bar resolution window, including on rebuild.
+        stream['target_parents'].append({
+            event['id']: event for event in pending_targets if event['id'] in closed_targets
+        })
         # Do not mutate engine-owned or already published historical objects.
         if bar_seq is None:
             bar_seq = self.conn.execute('SELECT COALESCE(MAX(seq),0)+1 FROM bars').fetchone()[0]
@@ -389,7 +398,7 @@ class Journal:
                 'observation_count': observations, 'duplicate_count': observations-total,
                 'policy': 'preserve_original_tape; review_corrected_history_separately'}
 
-    def snapshot(self, now=None):
+    def snapshot(self, now=None, *, focus_bars=None, include_native_context=True):
         now = now or datetime.now(timezone.utc)
         with self.lock:
             result = []
@@ -420,10 +429,15 @@ class Journal:
                     readiness = quality['acquisition_status']
                 if quality['quarantined_count']:
                     readiness = 'DATA_REVIEW_REQUIRED'
-                native_interp = interpret(last, native['items'], now, observation_seq, bar_quality=quality)
+                native_interp = (interpret(last, native['items'], now, observation_seq, bar_quality=quality)
+                                 if include_native_context else {'status': 'NOT_REQUESTED'})
+                target_parents = {
+                    parent_id: parent for batch in stream['target_parents'] for parent_id, parent in batch.items()
+                }
                 result.append(dict(native_interpretation=native_interp, data_quality=quality, symbol=symbol, timeframe=timeframe, source=source,
                     bar_count=stream['bar_count'], bars=list(stream['bars']), events=list(stream['events']),
-                    summary=summarize_stream(stream['bars'], stream['events'], state, native_interp),
+                    summary=summarize_stream(stream['bars'], stream['events'], state, native_interp,
+                                             focus_bars=focus_bars, target_parents=target_parents),
                     display=stream['display'].snapshot(), state=state, last_bar_close=last['time'], received_at=stream['received_at'],
                     age_seconds=round(age, 2), freshness=freshness, readiness=readiness, ready=readiness == 'READY_FOR_RESEARCH'))
             ready = bool(result) and all(s['ready'] for s in result)

@@ -76,7 +76,7 @@ class IndicatorTests(unittest.TestCase):
         sub = provider.indicators(["SOXL"], START, END, "rsi", "30second")
         self.assertEqual(sub.series[0]["points"][0]["time"], "2026-11-17T15:00:30+00:00")
 
-    def test_daily_next_midnight_and_trading_session_validation(self):
+    def test_daily_session_close_and_trading_session_validation(self):
         provider = self.provider([{"begins_at": "2026-11-13T00:00:00Z", "value": 55},
                                   {"begins_at": "2026-11-14T00:00:00Z", "value": 70},
                                   {"begins_at": "2026-11-17T00:00:00Z", "value": 80}])

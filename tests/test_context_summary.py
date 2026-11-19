@@ -1,10 +1,15 @@
 import copy
-from contextlib import closing
+from contextlib import closing, redirect_stdout
 from datetime import datetime, timedelta, timezone
+import io
 import json
 import math
+from pathlib import Path
+import random
+from tempfile import TemporaryDirectory
 import unittest
 
+from pa_lens.__main__ import main
 from pa_lens.context_summary import summarize_stream
 from pa_lens.service import Journal
 from pa_lens.timeframes import calendar
@@ -83,6 +88,70 @@ class StreamSummaryTests(unittest.TestCase):
         resolved, = active['recent_resolved']
         self.assertEqual((resolved['status'], resolved['target_state']), ('reached', 'reached'))
         self.assertEqual(resolved['levels'], {'range_high': 101, 'range_low': 99, 'target': 103})
+
+    def test_target_closure_survives_bounded_tapes_journal_rebuild_and_swing_focus(self):
+        schedule = calendar()
+        sessions = schedule.sessions_in_range('2025-01-01', '2026-11-17')[-330:]
+        random_values = random.Random(1)
+        tape = []
+        for i, session in enumerate(sessions):
+            if i < 25:
+                opened, close, high, low = 99.95, 100 + (i % 3) * .01, 101, 99
+            elif i == 25:
+                opened, close, high, low = 101.2, 101.5, 102, 101
+            elif i == len(sessions) - 1:
+                opened, close, high, low = 102, 102.8, 103.1, 101.8
+            else:
+                opened, close = (101.1 + random_values.random() * 1.5 for _ in range(2))
+                high, low = max(opened, close) + .1, min(opened, close) - .1
+            tape.append(dict(symbol='XYZ', timeframe='D', source='test', open=opened, high=high,
+                             low=low, close=close, time=schedule.session_close(session).isoformat()))
+
+        def check_closure(summary, focus):
+            self.assertEqual(summary['regime']['focus_window_bars'], focus)
+            structures = summary['active_structures']
+            self.assertFalse(any(row['id'] == parent['id'] for row in structures['live_setups']))
+            resolved, = [row for row in structures['recent_resolved'] if row['id'] == parent['id']]
+            self.assertEqual((resolved['family'], resolved['status'], resolved['target_state'],
+                              resolved['direction'], resolved['observed_at']),
+                             ('range_breakout', 'reached', 'reached', parent['direction'], child['observed_at']))
+            self.assertEqual(resolved['levels'], {
+                'range_high': parent['anchors']['high'], 'range_low': parent['anchors']['low'],
+                **{key: parent[key] for key in ('trigger', 'stop', 'target')},
+            })
+
+        with TemporaryDirectory() as temp:
+            db = Path(temp) / 'journal.db'
+            latest = datetime.fromisoformat(tape[-1]['time'])
+            with closing(Journal(db)) as journal:
+                for i, bar in enumerate(tape):
+                    result = journal.ingest(bar)
+                    if i == 25:
+                        parent, = [row for row in result['events'] if row['family'] == 'range_breakout']
+                self.assertEqual(parent['target'], 103)
+                child, = [row for row in result['events'] if row.get('parent_id') == parent['id']]
+                self.assertEqual((child['family'], child['status']), ('measured_move', 'reached'))
+                stream, = journal.snapshot(latest)['streams']
+                self.assertEqual((len(stream['bars']), len(stream['events'])), (300, 500))
+                self.assertIn(child, stream['events'])
+                self.assertNotIn(parent, stream['events'])
+                with self.subTest(path='live journal'):
+                    check_closure(stream['summary'], 30)
+
+            with closing(Journal(db)) as reopened, self.subTest(path='rebuilt journal'):
+                stream, = reopened.snapshot(latest)['streams']
+                check_closure(stream['summary'], 30)
+
+            path = Path(temp) / 'daily.jsonl'
+            path.write_text('\n'.join(map(json.dumps, tape)))
+            out = io.StringIO()
+            with self.subTest(path='offline swing with focus override'):
+                with redirect_stdout(out):
+                    self.assertEqual(main(['swing', '--input', str(path), '--db', str(db),
+                                           '--focus-bars', '10', '--output', 'jsonl']), 0)
+                summary = json.loads(out.getvalue())['summary']
+                check_closure(summary, 10)
+                self.assertEqual(summary['native_summary']['status'], 'NOT_REQUESTED')
 
     def test_final_flag_fanout_preserves_one_episode(self):
         tape = bars(3)

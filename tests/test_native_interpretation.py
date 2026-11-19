@@ -50,6 +50,29 @@ class NativeInterpretationTests(unittest.TestCase):
                 self.assertEqual(len(context_specs(explicit, interval=interval)), 18)
                 self.assertEqual({s['type'] for s in explicit if s['output'] == 'last:2'}, set(pack))
 
+    def test_context_pack_merges_equivalent_requests_using_widest_output(self):
+        from pa_lens.native_runtime import context_specs, native_specs
+
+        hourly = dict(type='macd', interval='hour', output='last:3')
+        custom = dict(type='macd', parameters={'slow_period': 30}, output='latest')
+        config = [
+            dict(type='macd', parameters=DAILY_PACK['macd'], output='series'),
+            dict(type='ema', parameters={'period': 20}, output='last:1'),
+            dict(type='atr', parameters={'period': 14}, output='last:12'),
+            dict(type='atr', output='last:4'),
+            hourly, custom,
+        ]
+        result = context_specs(native_specs('all', config, 'day'), interval='day')
+        self.assertEqual(len(result), 20)
+        self.assertEqual([item for item in result if item['type'] == 'macd'], [
+            dict(type='macd', parameters=DAILY_PACK['macd'], output='series', interval='day'),
+            dict(hourly, parameters={}), dict(custom, interval='day'),
+        ])
+        self.assertEqual([item['output'] for item in result if item['type'] == 'atr'], ['last:12'])
+        self.assertEqual([item['output'] for item in result if item['type'] == 'ema'], ['last:2'])
+        single = native_specs(None, [dict(type='ema', parameters={'period': 20}, output='last:1')], 'day')
+        self.assertEqual(context_specs(single, interval='day')[0]['output'], 'last:2')
+
     def test_intraday_overlays_use_positive_atr_and_accept_empty_returned_parameters(self):
         from pa_lens.native_interpretation import interpret
         bar, ema = self.fixture()

@@ -1,5 +1,5 @@
 """Project the current closed-bar context from a stream's retained observations."""
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import timedelta
 import math
 
@@ -7,6 +7,7 @@ from .core import parse_time
 from .timeframes import NY, calendar, consecutive_daily
 
 
+RECENT_RESOLUTION_BARS = 5
 _AVAILABLE = 'AVAILABLE_SOURCE_UNKNOWN'
 _NATIVE_LABELS = {
     'ema20': 'EMA20', 'vwap': 'VWAP', 'atr14': 'ATR14', 'rsi14': 'RSI14',
@@ -100,12 +101,24 @@ def _resolve_episode(episode, event, observed, index, status):
     episode.update(observed=observed, index=index)
 
 
-def _active_structures(segment_times, events, focus_count):
+def _setup(event, root, prior):
+    family = event['family']
+    anchors = event.get('anchors', {})
+    stage = event.get('stage') or anchors.get('stage') or event.get('attempt_label')
+    if family == 'trend_line_retest':
+        stage = stage or family
+    return dict(id=root, family=prior.get('family', family), status=event['status'],
+                direction=event.get('direction', 'neutral'), observed_at=event['observed_at'],
+                stage=stage, levels={**prior.get('levels', {}), **_setup_levels(event)},
+                explanation=event.get('explanation', ''))
+
+
+def _active_structures(segment_times, events, focus_count, target_parents):
     live, recent = [], []
     if not segment_times or not focus_count:
         return {'live_setups': live, 'recent_resolved': recent}
     focus_start = segment_times[-min(focus_count, len(segment_times))]
-    recent_start = segment_times[-min(focus_count, len(segment_times), 5)]
+    recent_start = segment_times[-min(focus_count, len(segment_times), RECENT_RESOLUTION_BARS)]
     segment_start, latest = segment_times[0], segment_times[-1]
 
     episodes, confirmation_ids, breakout_ids = {}, {}, {}
@@ -118,8 +131,15 @@ def _active_structures(segment_times, events, focus_count):
             continue
         parent = event.get('parent_id')
         if family == 'measured_move':
+            if status not in ('reached', 'invalidated'):
+                continue
             episode = episodes.get(confirmation_ids.get(parent))
-            if episode is not None and status in ('reached', 'invalidated'):
+            if episode is None and observed >= recent_start and parent in target_parents:
+                confirmed = target_parents[parent]
+                root = confirmed.get('parent_id') or confirmed['id']
+                episode = dict(setup=_setup(confirmed, root, {}), latest_family=confirmed['family'])
+                episodes[root] = episode
+            if episode is not None:
                 _resolve_episode(episode, event, observed, index, status)
                 episode['setup']['target_state'] = status
             continue
@@ -132,15 +152,10 @@ def _active_structures(segment_times, events, focus_count):
             root = parent
         elif family in _MULTISTAGE and parent_episode is not None and parent_episode['setup']['family'] == family:
             root = parent
+        elif family in _TRACKED_TARGETS and status == 'confirmed' and parent and parent_episode is None:
+            root = parent
         prior = episodes.get(root, {}).get('setup', {})
-        anchors = event.get('anchors', {})
-        stage = event.get('stage') or anchors.get('stage') or event.get('attempt_label')
-        if family == 'trend_line_retest':
-            stage = stage or family
-        setup = dict(id=root, family=prior.get('family', family), status=status,
-                     direction=event.get('direction', 'neutral'), observed_at=event['observed_at'],
-                     stage=stage, levels={**prior.get('levels', {}), **_setup_levels(event)},
-                     explanation=event.get('explanation', ''))
+        setup = _setup(event, root, prior)
         if family in _TRACKED_TARGETS and status == 'confirmed':
             confirmation_ids[event['id']] = root
             creation = event.get('target_state_at_creation')
@@ -253,8 +268,13 @@ def _key_levels(bars, times, segment, live_setups, native, atr):
 def summarize_stream(
     bars: Sequence[dict], events: Sequence[dict], engine_state: dict,
     native_interpretation: dict | None = None, *, focus_bars: int | None = None,
+    target_parents: Mapping[str, dict] | None = None,
 ) -> dict:
-    """Summarize ordered bars and events at the latest bar close."""
+    """Summarize ordered bars and events at the latest bar close.
+
+    Target parents map confirmation IDs to originating events that may have
+    aged out of the retained bars or events.
+    """
     bars = list(bars)
     times = [parse_time(bar['time']) for bar in bars]
     native = native_interpretation or {}
@@ -275,7 +295,7 @@ def summarize_stream(
     elif engine_atr is not None and engine_atr > 0:
         reference_atr, atr_origin = engine_atr, 'local_engine_atr15'
 
-    active = _active_structures(times[segment_start:], events, focus_count)
+    active = _active_structures(times[segment_start:], events, focus_count, target_parents or {})
     return {
         'regime': dict(context=engine_state.get('context', 'warmup'), efficiency_20=efficiency,
                        bars_total=engine_state.get('total_bars', len(bars)), bars_in_segment=bars_in_segment,
